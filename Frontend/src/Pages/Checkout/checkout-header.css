@@ -1,0 +1,57 @@
+.checkout-header {
+  height: 68px;
+  padding: 0 32px;
+  background: #0f172a;
+  border-bottom: 1px solid #1e293b;
+  display: flex;
+  justify-content: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+.checkout-header .header-content {
+  width: 100%;
+  max-width: 1120px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.checkout-header .BishalSection {
+  color: #6366f1; 
+  background: linear-gradient(135deg, #a5b4fc 0%, #6366f1 100%);
+  -webkit-background-clip: text;
+  background-clip: text; 
+  -webkit-text-fill-color: transparent;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.checkout-header .checkout-header-middle-section {
+  font-size: 19px;
+  font-weight: 600;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.checkout-header .return-to-home-link {
+  color: #818cf8;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.checkout-header .return-to-home-link:hover {
+  text-decoration: underline;
+}
+
+.checkout-header .checkout-header-right-section img {
+  height: 26px;
+  filter: brightness(0) invert(1);
+  opacity: 0.85;
+}

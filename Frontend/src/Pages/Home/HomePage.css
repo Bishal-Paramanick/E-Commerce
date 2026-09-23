@@ -1,0 +1,113 @@
+.home-page {
+  margin-top: 80px;
+  padding: 30px;
+  max-width: 1440px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.home-page .products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 24px;
+}
+
+.home-page .product-container {
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.home-page .product-container:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: #cbd5e1;
+}
+
+.home-page .product-image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 190px;
+  margin-bottom: 16px;
+  background-color: #f8fafc;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.home-page .product-image {
+  max-width: 85%;
+  max-height: 85%;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+}
+
+.home-page .product-container:hover .product-image {
+  transform: scale(1.05);
+}
+
+.home-page .product-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-dark);
+  line-height: 1.4;
+  height: 42px;
+  margin-bottom: 8px;
+}
+
+.home-page .product-rating-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.home-page .product-rating-stars {
+  width: 84px;
+}
+
+.home-page .product-rating-count {
+  color: var(--primary-color);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.home-page .product-price {
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 14px;
+}
+
+.home-page .product-quantity-container {
+  margin-bottom: 16px;
+}
+
+.home-page .product-spacer {
+  flex: 1;
+}
+
+.home-page .added-to-cart {
+  color: #10b981;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.home-page .added-to-cart img {
+  height: 16px;
+}
+
+.home-page .add-to-cart-button {
+  width: 100%;
+  height: 40px;
+  font-size: 14px;
+}

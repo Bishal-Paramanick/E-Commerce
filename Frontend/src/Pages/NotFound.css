@@ -1,0 +1,67 @@
+/* Centers the entire container layout on the viewport */
+.error-screen-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* The Beige Box Container */
+.error-box {
+  background-color: #fcf8f2; /* Smooth, soft beige background */
+  border: 2px solid #eaddcd; /* Slightly darker beige border lines */
+  border-radius: 12px;       /* Smooth rounded corners */
+  padding: 40px 60px;        /* Generous spacing inside the box */
+  max-width: 450px;
+  width: 100%;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05); /* Soft premium drop shadow */
+  text-align: center;
+}
+
+/* Subtle "Error" tag styling */
+.error-title {
+  font-size: 3.21rem;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: #797c8a;
+  margin: 0 0 10px 0;
+  font-weight: 600;
+}
+
+/* Massive, highlighted 404 text */
+.error-code {
+  font-size: 140px; /* Extremely large size */
+  font-weight: 900;
+  color: rgb(8, 79, 45); /* Highlighted using your brand green */
+  margin: 0;
+  line-height: 1;
+  letter-spacing: -2px;
+  
+  /* Text shadow effect to make the 404 pop off the background */
+  text-shadow: 3px 3px 0px rgba(8, 79, 45, 0.15);
+}
+
+/* The Page Not Found Subtitle */
+.error-message {
+  font-size: 26px;
+  color: #2c2a27;
+  font-weight: 700;
+  margin: 15px 0 0 0;
+}
+
+/* Responsive adjustment for small mobile viewports */
+@media (max-width: 480px) {
+  .error-box {
+    padding: 30px 20px;
+  }
+  
+  .error-code {
+    font-size: 100px;
+  }
+  
+  .error-message {
+    font-size: 22px;
+  }
+}

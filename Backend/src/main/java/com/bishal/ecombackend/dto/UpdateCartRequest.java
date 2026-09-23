@@ -1,0 +1,13 @@
+package com.bishal.ecombackend.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class UpdateCartRequest {
+    private Integer quantity;
+    private String deliveryOptionId;
+}
