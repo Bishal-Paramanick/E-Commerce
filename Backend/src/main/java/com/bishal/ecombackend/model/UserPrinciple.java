@@ -17,7 +17,17 @@ public class UserPrinciple implements UserDetails {
 
     @Override
     public Collection getAuthorities() {
-        return Collections.singletonList(new SimpleGrantedAuthority(user.getRole()));
+        String role = user.getRole();
+        if (role == null || role.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Spring Security's hasRole("ADMIN") requires authority "ROLE_ADMIN"
+        if (!role.startsWith("ROLE_")) {
+            role = "ROLE_" + role;
+        }
+
+        return Collections.singletonList(new SimpleGrantedAuthority(role));
     }
 
     @Override

@@ -18,4 +18,9 @@ public class ProductDTO {
     private Integer priceCents;
     private Rating rating;
     private List<String> keywords;
+
+    private String brand;
+    private Integer stockQuantity;
+    private Long categoryId;
+    private String categoryName;
 }

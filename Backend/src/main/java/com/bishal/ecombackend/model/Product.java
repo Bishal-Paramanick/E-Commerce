@@ -19,7 +19,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Product implements Persistable<UUID> {
+public class Product implements Persistable {
 
     @Id
     private UUID id;
@@ -33,13 +33,23 @@ public class Product implements Persistable<UUID> {
     @Column(nullable = false)
     private Integer priceCents;
 
+    @Column(length = 100)
+    private String brand;
+
+    @Column(nullable = false)
+    private Integer stockQuantity = 0;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "category_id")
+    private Category category;
+
     @Embedded
     private Rating rating;
 
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.EAGER, targetClass = String.class)
     @CollectionTable(name = "product_keywords", joinColumns = @JoinColumn(name = "product_id"))
     @Column(name = "keyword")
-    private List<String> keywords = new ArrayList<>();
+    private List keywords = new ArrayList<>();
 
     @CreationTimestamp
     @Column(updatable = false)
