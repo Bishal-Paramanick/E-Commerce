@@ -1,28 +1,22 @@
 package com.bishal.ecombackend.model;
 
-import org.springframework.security.core.GrantedAuthority;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 
-public class UserPrinciple implements UserDetails {
-
-    private final Users user;
-
-    public UserPrinciple(Users user) {
-        this.user = user;
-    }
+public record UserPrinciple(Users user) implements UserDetails {
 
     @Override
-    public Collection getAuthorities() {
+    public @NonNull Collection<SimpleGrantedAuthority> getAuthorities() {
         String role = user.getRole();
         if (role == null || role.trim().isEmpty()) {
             return Collections.emptyList();
         }
 
-        // Spring Security's hasRole("ADMIN") requires authority "ROLE_ADMIN"
         if (!role.startsWith("ROLE_")) {
             role = "ROLE_" + role;
         }
@@ -31,32 +25,35 @@ public class UserPrinciple implements UserDetails {
     }
 
     @Override
-    public String getPassword() {
+    public @NonNull String getPassword() {
         return user.getPassword();
     }
 
     @Override
-    public String getUsername() {
+    public @NonNull String getUsername() {
         return user.getUsername();
     }
 
     @Override
     public boolean isAccountNonExpired() {
-        return true;
+        return user.isAccountNonExpired();
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return user.isAccountNonLocked();
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return true;
+        if (user.getPasswordChangedAt() == null) {
+            return true;
+        }
+        return user.getPasswordChangedAt().isAfter(LocalDateTime.now().minusDays(90));
     }
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return user.isEnabled();
     }
 }

@@ -4,9 +4,11 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
-@Entity
 @Setter
+@Entity
 @Table(name = "users")
 public class Users {
 
@@ -23,6 +25,18 @@ public class Users {
     @Column(nullable = false, length = 50)
     private String role = "ROLE_USER";
 
+    @Column(nullable = false)
+    private boolean enabled = true;
+
+    @Column(name = "account_non_locked", nullable = false)
+    private boolean accountNonLocked = true;
+
+    @Column(name = "account_non_expired", nullable = false)
+    private boolean accountNonExpired = true;
+
+    @Column(name = "password_changed_at")
+    private LocalDateTime passwordChangedAt = LocalDateTime.now();
+
     public Users() {}
 
     public Users(String username, String password, String role) {
@@ -31,13 +45,25 @@ public class Users {
         this.role = role;
     }
 
+    public Users(String username, String password, String role, boolean enabled, boolean accountNonLocked, boolean accountNonExpired) {
+        this.username = username;
+        this.password = password;
+        this.role = role;
+        this.enabled = enabled;
+        this.accountNonLocked = accountNonLocked;
+        this.accountNonExpired = accountNonExpired;
+        this.passwordChangedAt = LocalDateTime.now();
+    }
+
     @Override
     public String toString() {
         return "Users{" +
                 "id=" + id +
                 ", username='" + username + '\'' +
-                ", password='" + password + '\'' +
                 ", role='" + role + '\'' +
+                ", enabled=" + enabled +
+                ", accountNonLocked=" + accountNonLocked +
+                ", accountNonExpired=" + accountNonExpired +
                 '}';
     }
 }

@@ -1,5 +1,6 @@
 package com.bishal.ecombackend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -16,12 +17,18 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SuppressWarnings("all")
 public class CartItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(columnDefinition = "BINARY(16)")
     private UUID id;
+
+    // Connects this item to the authenticated user's cart
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "cart_id", nullable = false)
+    @JsonIgnore
+    private Cart cart;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "product_id", nullable = false)
@@ -41,16 +48,7 @@ public class CartItem {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    // Explicit Getter & Setter for DeliveryOption
-    public DeliveryOption getDeliveryOption() {
-        return this.deliveryOption;
-    }
-
-    public void setDeliveryOption(DeliveryOption deliveryOption) {
-        this.deliveryOption = deliveryOption;
-    }
-
-    // Helper getters for frontend JSON serialization
+    // Helper getters for JSON serialization
     @JsonProperty("productId")
     public UUID getProductId() {
         return product != null ? product.getId() : null;
