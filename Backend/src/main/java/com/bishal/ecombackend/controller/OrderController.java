@@ -1,14 +1,15 @@
 package com.bishal.ecombackend.controller;
 
+import com.bishal.ecombackend.dto.CheckoutRequest;
 import com.bishal.ecombackend.dto.OrderResponse;
 import com.bishal.ecombackend.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -19,29 +20,32 @@ public class OrderController {
 
     private final OrderService orderService;
 
-    @GetMapping
-    public ResponseEntity<List<OrderResponse>> getOrders(@RequestParam(required = false) String expand) {
-        return ResponseEntity.ok(orderService.getAllOrders(expand));
+    // POST /api/orders/checkout or POST /api/orders
+    @PostMapping(path = {"/checkout", ""})
+    public ResponseEntity<OrderResponse> placeOrder(
+            Authentication authentication,
+            @RequestBody(required = false) CheckoutRequest request) {
+        String username = authentication.getName();
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(orderService.checkout(username, request));
     }
 
+    // GET /api/orders (Authenticated User's Order History)
+    @GetMapping
+    public ResponseEntity<List<OrderResponse>> getMyOrders(
+            Authentication authentication,
+            @RequestParam(required = false) String expand) {
+        String username = authentication.getName();
+        return ResponseEntity.ok(orderService.getUserOrders(username, expand));
+    }
+
+    // GET /api/orders/{orderId} (Authenticated User's Order Details)
     @GetMapping("/{orderId}")
-    public ResponseEntity<?> getOrderById(
+    public ResponseEntity<OrderResponse> getOrderById(
+            Authentication authentication,
             @PathVariable UUID orderId,
             @RequestParam(required = false) String expand) {
-        try {
-            return ResponseEntity.ok(orderService.getOrderById(orderId, expand));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Order not found"));
-        }
-    }
-
-    @PostMapping
-    public ResponseEntity<?> placeOrder() {
-        try {
-            OrderResponse order = orderService.placeOrder();
-            return ResponseEntity.status(HttpStatus.CREATED).body(order);
-        } catch (IllegalStateException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+        String username = authentication.getName();
+        return ResponseEntity.ok(orderService.getUserOrderById(username, orderId, expand));
     }
 }

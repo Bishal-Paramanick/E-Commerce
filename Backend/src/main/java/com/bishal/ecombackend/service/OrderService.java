@@ -1,14 +1,11 @@
 package com.bishal.ecombackend.service;
 
+import com.bishal.ecombackend.dto.CheckoutRequest;
 import com.bishal.ecombackend.dto.OrderResponse;
+import com.bishal.ecombackend.dto.UpdateOrderStatusRequest;
 import com.bishal.ecombackend.mapper.OrderMapper;
-import com.bishal.ecombackend.model.CartItem;
-import com.bishal.ecombackend.model.DeliveryOption;
-import com.bishal.ecombackend.model.Order;
-import com.bishal.ecombackend.model.OrderItem;
-import com.bishal.ecombackend.model.Product;
-import com.bishal.ecombackend.repo.CartItemRepository;
-import com.bishal.ecombackend.repo.OrderRepository;
+import com.bishal.ecombackend.model.*;
+import com.bishal.ecombackend.repo.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,65 +21,147 @@ import java.util.stream.Collectors;
 public class OrderService {
 
     private final OrderRepository orderRepository;
+    private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
+    private final ProductRepository productRepository;
+    private final UserRepo userRepository;
     private final OrderMapper orderMapper;
 
-    public List<OrderResponse> getAllOrders(String expand) {
-        List<Order> orders = orderRepository.findAllByOrderByOrderTimeMsDesc();
-        boolean expandProducts = "products".equalsIgnoreCase(expand);
-
-        return orders.stream()
-                .map(order -> orderMapper.toResponse(order, expandProducts))
-                .collect(Collectors.toList());
-    }
-
-    public OrderResponse getOrderById(UUID orderId, String expand) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new NoSuchElementException("Order not found with id: " + orderId));
-
-        boolean expandProducts = "products".equalsIgnoreCase(expand);
-        return orderMapper.toResponse(order, expandProducts);
-    }
-
     @Transactional
-    public OrderResponse placeOrder() {
-        List<CartItem> cartItems = cartItemRepository.findAll();
-        if (cartItems.isEmpty()) {
-            throw new IllegalStateException("Cart is empty");
+    public OrderResponse checkout(String username, CheckoutRequest request) {
+        String shippingAddress = (request != null && request.getShippingAddress() != null && !request.getShippingAddress().isBlank())
+                ? request.getShippingAddress()
+                : "Default Shipping Address";
+
+        Users user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new NoSuchElementException("User not found: " + username);
         }
 
+        Cart cart = getCartWithValidatedItems(username);
+        List<CartItem> cartItems = cart.getItems();
+
+        validateStockAvailability(cartItems);
+
         long now = System.currentTimeMillis();
-        int rawTotalCostCents = 0;
+        int productCostCents = 0;
+        int shippingCostCents = 0;
         List<OrderItem> orderProducts = new ArrayList<>();
 
         for (CartItem item : cartItems) {
             Product product = item.getProduct();
             DeliveryOption deliveryOption = item.getDeliveryOption();
+            int qty = item.getQuantity();
+            int unitPrice = product.getPriceCents();
+            int subtotal = unitPrice * qty;
 
-            int productCost = product.getPriceCents() * item.getQuantity();
-            int shippingCost = deliveryOption.getPriceCents();
-            rawTotalCostCents += (productCost + shippingCost);
+            productCostCents += subtotal;
+            if (deliveryOption != null && deliveryOption.getPriceCents() != null) {
+                shippingCostCents += deliveryOption.getPriceCents();
+            }
 
-            long estimatedDeliveryTimeMs = now + (deliveryOption.getDeliveryDays() * 24L * 60 * 60 * 1000);
+            // Atomically decrement stock
+            product.setStockQuantity(product.getStockQuantity() - qty);
+            productRepository.save(product);
 
-            OrderItem orderItem = new OrderItem();
-            orderItem.setProductId(product.getId());
-            orderItem.setQuantity(item.getQuantity());
-            orderItem.setEstimatedDeliveryTimeMs(estimatedDeliveryTimeMs);
+            long deliveryDays = (deliveryOption != null && deliveryOption.getDeliveryDays() != null)
+                    ? deliveryOption.getDeliveryDays()
+                    : 3L;
+            long estimatedDeliveryTimeMs = now + (deliveryDays * 24L * 60 * 60 * 1000);
+
+            OrderItem orderItem = OrderItem.builder()
+                    .productId(product.getId())
+                    .quantity(qty)
+                    .unitPriceCents(unitPrice)
+                    .subtotalCents(subtotal)
+                    .deliveryOptionId(deliveryOption != null ? deliveryOption.getId() : "1")
+                    .estimatedDeliveryTimeMs(estimatedDeliveryTimeMs)
+                    .build();
 
             orderProducts.add(orderItem);
         }
 
-        int totalCostCents = (int) Math.round(rawTotalCostCents * 1.10);
+        int totalBeforeTaxCents = productCostCents + shippingCostCents;
+        int taxCents = (int) Math.round(totalBeforeTaxCents * 0.10);
+        int totalCostCents = totalBeforeTaxCents + taxCents;
 
-        Order order = new Order();
-        order.setOrderTimeMs(now);
-        order.setTotalCostCents(totalCostCents);
-        order.setProducts(orderProducts);
+        Order order = Order.builder()
+                .user(user)
+                .status(OrderStatus.PENDING)
+                .orderTimeMs(now)
+                .shippingAddress(shippingAddress)
+                .shippingCostCents(shippingCostCents)
+                .taxCents(taxCents)
+                .totalCostCents(totalCostCents)
+                .products(orderProducts)
+                .build();
 
         Order savedOrder = orderRepository.save(order);
-        cartItemRepository.deleteAll();
 
-        return orderMapper.toResponse(savedOrder, false);
+        // Clear only this user's cart
+        cartItemRepository.deleteAllByCart_Id(cart.getId());
+        cart.clearItems();
+        cartRepository.save(cart);
+
+        return orderMapper.toResponse(savedOrder, true);
+    }
+
+    private Cart getCartWithValidatedItems(String username) {
+        Cart cart = cartRepository.findByUserUsername(username)
+                .orElseThrow(() -> new IllegalStateException("Cart not found for user: " + username));
+
+        if (cart.getItems() == null || cart.getItems().isEmpty()) {
+            throw new IllegalStateException("Cannot checkout with an empty cart");
+        }
+        return cart;
+    }
+
+    private void validateStockAvailability(List<CartItem> cartItems) {
+        for (CartItem item : cartItems) {
+            Product product = item.getProduct();
+            if (product.getStockQuantity() < item.getQuantity()) {
+                throw new IllegalArgumentException("Insufficient inventory for product: "
+                        + product.getName() + " (Available: " + product.getStockQuantity() + ")");
+            }
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getUserOrders(String username, String expand) {
+        boolean expandProducts = "products".equalsIgnoreCase(expand);
+        return orderRepository.findAllByUser_UsernameOrderByOrderTimeMsDesc(username).stream()
+                .map(order -> orderMapper.toResponse(order, expandProducts))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public OrderResponse getUserOrderById(String username, UUID orderId, String expand) {
+        Order order = orderRepository.findByIdAndUser_Username(orderId, username)
+                .orElseThrow(() -> new NoSuchElementException("Order not found or access denied"));
+        boolean expandProducts = "products".equalsIgnoreCase(expand);
+        return orderMapper.toResponse(order, expandProducts);
+    }
+
+    // --- Admin Operations ---
+
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getAllOrdersAdmin(String expand) {
+        boolean expandProducts = "products".equalsIgnoreCase(expand);
+        return orderRepository.findAllByOrderByOrderTimeMsDesc().stream()
+                .map(order -> orderMapper.toResponse(order, expandProducts))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public OrderResponse updateOrderStatusAdmin(UUID orderId, UpdateOrderStatusRequest request) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NoSuchElementException("Order not found: " + orderId));
+
+        if (request != null && request.getStatus() != null) {
+            order.setStatus(request.getStatus());
+        }
+
+        Order updated = orderRepository.save(order);
+        return orderMapper.toResponse(updated, true);
     }
 }

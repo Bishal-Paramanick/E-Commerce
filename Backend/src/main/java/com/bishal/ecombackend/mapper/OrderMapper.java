@@ -30,14 +30,19 @@ public class OrderMapper {
                 .collect(Collectors.toList())
                 : Collections.emptyList();
 
-        return new OrderResponse(
-                entity.getId(),
-                entity.getOrderTimeMs(),
-                entity.getTotalCostCents(),
-                itemResponses,
-                entity.getCreatedAt(),
-                entity.getUpdatedAt()
-        );
+        return OrderResponse.builder()
+                .id(entity.getId())
+                .username(entity.getUser() != null ? entity.getUser().getUsername() : null)
+                .status(entity.getStatus())
+                .orderTimeMs(entity.getOrderTimeMs())
+                .totalCostCents(entity.getTotalCostCents())
+                .shippingCostCents(entity.getShippingCostCents())
+                .taxCents(entity.getTaxCents())
+                .shippingAddress(entity.getShippingAddress())
+                .products(itemResponses)
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .build();
     }
 
     public OrderItemResponse toOrderItemResponse(OrderItem item, boolean expandProducts) {
@@ -49,11 +54,14 @@ public class OrderMapper {
                 ? productRepository.findById(item.getProductId()).orElse(null)
                 : null;
 
-        return new OrderItemResponse(
-                item.getProductId(),
-                item.getQuantity(),
-                item.getEstimatedDeliveryTimeMs(),
-                product
-        );
+        return OrderItemResponse.builder()
+                .productId(item.getProductId())
+                .quantity(item.getQuantity())
+                .unitPriceCents(item.getUnitPriceCents())
+                .subtotalCents(item.getSubtotalCents())
+                .deliveryOptionId(item.getDeliveryOptionId())
+                .estimatedDeliveryTimeMs(item.getEstimatedDeliveryTimeMs())
+                .product(product)
+                .build();
     }
 }
