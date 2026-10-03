@@ -39,4 +39,8 @@ out/
 Backend/logs/
 logs/
 *.log
-uploads/
+
+# Ignore local secrets
+.env
+ .env.local
+ *.env

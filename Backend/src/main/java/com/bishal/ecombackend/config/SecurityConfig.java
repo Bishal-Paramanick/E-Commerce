@@ -55,8 +55,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/products/**", "/api/categories/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/products/**", "/api/categories/**").hasRole("ADMIN")
 
-                        // Cart & Orders require authentication
-                        .requestMatchers("/api/cart/**", "/api/orders/**").authenticated()
+                        // Cart, Orders & Payments require authentication
+                        .requestMatchers("/api/cart/**", "/api/orders/**", "/api/payments/**").authenticated()
 
                         // Any other endpoint
                         .anyRequest().authenticated()
@@ -86,7 +86,9 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }

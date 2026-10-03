@@ -39,6 +39,7 @@ public class OrderMapper {
                 .shippingCostCents(entity.getShippingCostCents())
                 .taxCents(entity.getTaxCents())
                 .shippingAddress(entity.getShippingAddress())
+                .paymentOrderId(entity.getPaymentOrderId())
                 .products(itemResponses)
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())

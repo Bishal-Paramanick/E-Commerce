@@ -2,7 +2,8 @@ package com.bishal.ecombackend.model;
 
 public enum OrderStatus {
     PENDING,
-    PROCESSING,
+    PAID,
+    FAILED,
     SHIPPED,
     DELIVERED,
     CANCELLED

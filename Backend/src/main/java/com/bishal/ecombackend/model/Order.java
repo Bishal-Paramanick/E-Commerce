@@ -3,8 +3,9 @@ package com.bishal.ecombackend.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -13,9 +14,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+// @Getter/@Setter instead of @Data: @Data generates equals/hashCode/toString over every field,
+// including the LAZY user and the order lines, which can trigger lazy-loading errors.
 @Entity
 @Table(name = "orders")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -49,6 +53,12 @@ public class Order {
 
     @Column(nullable = false)
     private Long orderTimeMs;
+
+    @Column(name = "payment_order_id")
+    private String paymentOrderId;
+
+    @Column(name = "payment_id")
+    private String paymentId;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "order_products", joinColumns = @JoinColumn(name = "order_id"))

@@ -26,6 +26,7 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final UserRepo userRepository;
     private final OrderMapper orderMapper;
+    private final PaymentService paymentService;
 
     @Transactional
     public OrderResponse checkout(String username, CheckoutRequest request) {
@@ -60,7 +61,7 @@ public class OrderService {
                 shippingCostCents += deliveryOption.getPriceCents();
             }
 
-            // Atomically decrement stock
+            // Decrement stock
             product.setStockQuantity(product.getStockQuantity() - qty);
             productRepository.save(product);
 
@@ -85,6 +86,13 @@ public class OrderService {
         int taxCents = (int) Math.round(totalBeforeTaxCents * 0.10);
         int totalCostCents = totalBeforeTaxCents + taxCents;
 
+        // Create the Razorpay gateway order (throws if the amount is invalid,
+        // which rolls back the stock changes above)
+        String paymentOrderId = paymentService.createRazorpayOrder(
+                totalCostCents,
+                "rcpt_" + now
+        );
+
         Order order = Order.builder()
                 .user(user)
                 .status(OrderStatus.PENDING)
@@ -93,6 +101,7 @@ public class OrderService {
                 .shippingCostCents(shippingCostCents)
                 .taxCents(taxCents)
                 .totalCostCents(totalCostCents)
+                .paymentOrderId(paymentOrderId)
                 .products(orderProducts)
                 .build();
 

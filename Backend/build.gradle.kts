@@ -1,12 +1,12 @@
 plugins {
     java
-    id("org.springframework.boot") version "4.1.1"
+    id("org.springframework.boot") version "3.5.6"
     id("io.spring.dependency-management") version "1.1.7"
 }
 
 group = "com.bishal"
 version = "0.0.1-SNAPSHOT"
-description = "e-com-backendj"
+description = "e-com-backend"
 
 java {
     toolchain {
@@ -18,41 +18,41 @@ repositories {
     mavenCentral()
 }
 
+// Overrides the Lombok version managed by Spring Boot's BOM (1.18.36 in Boot 3.4.x),
+// which does not support JDK 25. JDK 25 support starts in Lombok 1.18.40.
+extra["lombok.version"] = "1.18.42"
+
 dependencies {
-    // Spring Boot Starters
+    // Spring Boot Starters (starter-web already includes Jackson databind + jsr310)
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-security")
 
-    // Jackson Databind & Java Time Support
-    implementation("com.fasterxml.jackson.core:jackson-databind")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+    // Payments
+    implementation("com.razorpay:razorpay-java:1.4.8")
 
-    // Database Driver & Devtools
+    // Database Driver & DevTools
     runtimeOnly("com.mysql:mysql-connector-j")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
 
-    // Lombok Configuration (Managed by Spring Boot)
-    compileOnly("org.projectlombok:lombok")
-    annotationProcessor("org.projectlombok:lombok")
+    // Lombok (1.18.40+ is required for JDK 25)
+    val lombokVersion = "1.18.42"
+    compileOnly("org.projectlombok:lombok:$lombokVersion")
+    annotationProcessor("org.projectlombok:lombok:$lombokVersion")
+    testCompileOnly("org.projectlombok:lombok:$lombokVersion")
+    testAnnotationProcessor("org.projectlombok:lombok:$lombokVersion")
 
-    // Spring Security Starter (bundles core, web, and config)
-    implementation("org.springframework.boot:spring-boot-starter-security")
-
-    // Security Test Support (optional, for testing)
-    testImplementation("org.springframework.security:spring-security-test")
-
-    // JWT Dependencies
+    // JWT
     implementation("io.jsonwebtoken:jjwt-api:0.12.6")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
 
-    // Lombok in Tests
-    testCompileOnly("org.projectlombok:lombok")
-    testAnnotationProcessor("org.projectlombok:lombok")
+
 
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.security:spring-security-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

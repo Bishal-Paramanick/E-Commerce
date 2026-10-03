@@ -1,36 +1,38 @@
 package com.bishal.ecombackend.model;
 
-import org.jspecify.annotations.NonNull;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 public record UserPrinciple(Users user) implements UserDetails {
 
     @Override
-    public @NonNull Collection<SimpleGrantedAuthority> getAuthorities() {
+    public Collection<? extends GrantedAuthority> getAuthorities() {
         String role = user.getRole();
         if (role == null || role.trim().isEmpty()) {
             return Collections.emptyList();
         }
 
-        if (!role.startsWith("ROLE_")) {
-            role = "ROLE_" + role;
-        }
+        String cleanRole = role.replaceFirst("^ROLE_", "").toUpperCase();
 
-        return Collections.singletonList(new SimpleGrantedAuthority(role));
+        return List.of(
+                new SimpleGrantedAuthority("ROLE_" + cleanRole),
+                new SimpleGrantedAuthority(cleanRole)
+        );
     }
 
     @Override
-    public @NonNull String getPassword() {
+    public String getPassword() {
         return user.getPassword();
     }
 
     @Override
-    public @NonNull String getUsername() {
+    public String getUsername() {
         return user.getUsername();
     }
 

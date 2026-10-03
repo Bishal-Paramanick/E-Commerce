@@ -23,6 +23,7 @@ public class OrderResponse {
     private Integer shippingCostCents;
     private Integer taxCents;
     private String shippingAddress;
+    private String paymentOrderId;
     private List<OrderItemResponse> products;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
