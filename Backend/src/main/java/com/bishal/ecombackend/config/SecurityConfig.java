@@ -49,13 +49,16 @@ public class SecurityConfig {
                         // Public Read-Only Catalog Endpoints
                         .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/categories/**").permitAll()
 
+                        // Public Webhook from Razorpay
+                        .requestMatchers(HttpMethod.POST, "/api/payments/webhook").permitAll()
+
                         // Admin Endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/products/**", "/api/categories/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/products/**", "/api/categories/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/products/**", "/api/categories/**").hasRole("ADMIN")
 
-                        // Cart, Orders & Payments require authentication
+                        // Cart, Orders & Authenticated Payments require authentication
                         .requestMatchers("/api/cart/**", "/api/orders/**", "/api/payments/**").authenticated()
 
                         // Any other endpoint
@@ -86,7 +89,6 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());

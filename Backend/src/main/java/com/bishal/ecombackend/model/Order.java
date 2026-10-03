@@ -6,16 +6,11 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-// @Getter/@Setter instead of @Data: @Data generates equals/hashCode/toString over every field,
-// including the LAZY user and the order lines, which can trigger lazy-loading errors.
 @Entity
 @Table(name = "orders")
 @Getter
@@ -23,7 +18,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Order {
+public class Order extends BaseAuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -64,11 +59,4 @@ public class Order {
     @CollectionTable(name = "order_products", joinColumns = @JoinColumn(name = "order_id"))
     @Builder.Default
     private List<OrderItem> products = new ArrayList<>();
-
-    @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
 }

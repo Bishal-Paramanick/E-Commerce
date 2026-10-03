@@ -2,11 +2,12 @@ package com.bishal.ecombackend.service;
 
 import com.bishal.ecombackend.dto.CheckoutRequest;
 import com.bishal.ecombackend.dto.OrderResponse;
-import com.bishal.ecombackend.dto.UpdateOrderStatusRequest;
+import com.bishal.ecombackend.exception.ResourceNotFoundException;
 import com.bishal.ecombackend.mapper.OrderMapper;
 import com.bishal.ecombackend.model.*;
 import com.bishal.ecombackend.repo.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,14 +26,13 @@ public class OrderService {
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
     private final UserRepo userRepository;
+    private final AddressRepository addressRepository;
     private final OrderMapper orderMapper;
     private final PaymentService paymentService;
 
     @Transactional
     public OrderResponse checkout(String username, CheckoutRequest request) {
-        String shippingAddress = (request != null && request.getShippingAddress() != null && !request.getShippingAddress().isBlank())
-                ? request.getShippingAddress()
-                : "Default Shipping Address";
+        String shippingAddress = resolveShippingAddress(username, request);
 
         Users user = userRepository.findByUsername(username);
         if (user == null) {
@@ -86,8 +86,6 @@ public class OrderService {
         int taxCents = (int) Math.round(totalBeforeTaxCents * 0.10);
         int totalCostCents = totalBeforeTaxCents + taxCents;
 
-        // Create the Razorpay gateway order (throws if the amount is invalid,
-        // which rolls back the stock changes above)
         String paymentOrderId = paymentService.createRazorpayOrder(
                 totalCostCents,
                 "rcpt_" + now
@@ -107,12 +105,30 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
-        // Clear only this user's cart
         cartItemRepository.deleteAllByCart_Id(cart.getId());
         cart.clearItems();
         cartRepository.save(cart);
 
         return orderMapper.toResponse(savedOrder, true);
+    }
+
+    private String resolveShippingAddress(String username, CheckoutRequest request) {
+        // 1. Picked a saved address ID
+        if (request != null && request.getAddressId() != null) {
+            return addressRepository.findByIdAndUser_Username(request.getAddressId(), username)
+                    .map(Address::toFormattedAddress)
+                    .orElseThrow(() -> new ResourceNotFoundException("Selected address not found: " + request.getAddressId()));
+        }
+
+        // 2. Custom shipping address string passed directly
+        if (request != null && request.getShippingAddress() != null && !request.getShippingAddress().isBlank()) {
+            return request.getShippingAddress().trim();
+        }
+
+        // 3. Fallback to default address if one exists
+        return addressRepository.findByUser_UsernameAndIsDefaultTrue(username)
+                .map(Address::toFormattedAddress)
+                .orElse("Default Shipping Address");
     }
 
     private Cart getCartWithValidatedItems(String username) {
@@ -151,6 +167,33 @@ public class OrderService {
         return orderMapper.toResponse(order, expandProducts);
     }
 
+    @Transactional
+    public OrderResponse cancelOrder(String username, UUID orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        if (!order.getUser().getUsername().equals(username)) {
+            throw new AccessDeniedException("You are not authorized to cancel this order");
+        }
+
+        if (!order.getStatus().isCancellable()) {
+            throw new IllegalStateException("Order cannot be cancelled in its current state: " + order.getStatus());
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+
+        // Restore inventory for each product
+        for (OrderItem item : order.getProducts()) {
+            productRepository.findById(item.getProductId()).ifPresent(product -> {
+                product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
+                productRepository.save(product);
+            });
+        }
+
+        Order savedOrder = orderRepository.save(order);
+        return orderMapper.toResponse(savedOrder, true);
+    }
+
     // --- Admin Operations ---
 
     @Transactional(readOnly = true)
@@ -162,15 +205,27 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderResponse updateOrderStatusAdmin(UUID orderId, UpdateOrderStatusRequest request) {
+    public OrderResponse updateOrderStatusByAdmin(UUID orderId, OrderStatus newStatus) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new NoSuchElementException("Order not found: " + orderId));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
-        if (request != null && request.getStatus() != null) {
-            order.setStatus(request.getStatus());
+        if (!order.getStatus().canTransitionTo(newStatus)) {
+            throw new IllegalStateException(
+                    String.format("Invalid status transition from %s to %s", order.getStatus(), newStatus)
+            );
         }
 
-        Order updated = orderRepository.save(order);
-        return orderMapper.toResponse(updated, true);
+        if (newStatus == OrderStatus.CANCELLED) {
+            for (OrderItem item : order.getProducts()) {
+                productRepository.findById(item.getProductId()).ifPresent(product -> {
+                    product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
+                    productRepository.save(product);
+                });
+            }
+        }
+
+        order.setStatus(newStatus);
+        Order updatedOrder = orderRepository.save(order);
+        return orderMapper.toResponse(updatedOrder, true);
     }
 }

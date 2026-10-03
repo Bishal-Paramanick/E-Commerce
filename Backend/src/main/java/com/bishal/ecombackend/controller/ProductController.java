@@ -2,6 +2,7 @@ package com.bishal.ecombackend.controller;
 
 import com.bishal.ecombackend.dto.ProductDTO;
 import com.bishal.ecombackend.service.ProductService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -46,13 +47,15 @@ public class ProductController {
 
     // Create New Product (Admin Protected)
     @PostMapping
-    public ResponseEntity<ProductDTO> createProduct(@RequestBody ProductDTO dto) {
+    public ResponseEntity<ProductDTO> createProduct(@Valid @RequestBody ProductDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(productService.createProduct(dto));
     }
 
     // Update Product (Admin Protected)
     @PutMapping("/{productId}")
-    public ResponseEntity<ProductDTO> updateProduct(@PathVariable UUID productId, @RequestBody ProductDTO dto) {
+    public ResponseEntity<ProductDTO> updateProduct(
+            @PathVariable UUID productId,
+            @Valid @RequestBody ProductDTO dto) {
         return ResponseEntity.ok(productService.updateProduct(productId, dto));
     }
 

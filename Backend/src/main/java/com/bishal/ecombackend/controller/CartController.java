@@ -5,6 +5,7 @@ import com.bishal.ecombackend.dto.CartItemResponse;
 import com.bishal.ecombackend.dto.CartSummaryResponse;
 import com.bishal.ecombackend.dto.UpdateCartRequest;
 import com.bishal.ecombackend.service.CartService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,8 +13,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @RestController
@@ -38,58 +37,31 @@ public class CartController {
     }
 
     @PostMapping("/items")
-    public ResponseEntity<?> addToCart(
+    public ResponseEntity<CartItemResponse> addToCart(
             Principal principal,
-            @RequestBody AddToCartRequest request
+            @Valid @RequestBody AddToCartRequest request
     ) {
-        if (request.getProductId() == null || request.getQuantity() == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "productId and quantity are required"));
-        }
-        if (request.getQuantity() < 1) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Quantity must be at least 1"));
-        }
-
-        try {
-            CartItemResponse response = cartService.addToCart(principal.getName(), request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+        CartItemResponse response = cartService.addToCart(principal.getName(), request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/items/{itemId}")
-    public ResponseEntity<?> updateCartItem(
+    public ResponseEntity<CartItemResponse> updateCartItem(
             Principal principal,
             @PathVariable UUID itemId,
-            @RequestBody UpdateCartRequest request
+            @Valid @RequestBody UpdateCartRequest request
     ) {
-        if (request.getQuantity() != null && request.getQuantity() < 1) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Quantity must be greater than 0"));
-        }
-
-        try {
-            CartItemResponse response = cartService.updateCartItem(principal.getName(), itemId, request);
-            return ResponseEntity.ok(response);
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+        CartItemResponse response = cartService.updateCartItem(principal.getName(), itemId, request);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/items/{itemId}")
-    public ResponseEntity<?> deleteCartItem(
+    public ResponseEntity<Void> deleteCartItem(
             Principal principal,
             @PathVariable UUID itemId
     ) {
-        try {
-            cartService.removeCartItem(principal.getName(), itemId);
-            return ResponseEntity.noContent().build();
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
+        cartService.removeCartItem(principal.getName(), itemId);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping

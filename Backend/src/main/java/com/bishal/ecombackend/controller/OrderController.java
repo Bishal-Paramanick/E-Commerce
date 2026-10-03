@@ -3,6 +3,7 @@ package com.bishal.ecombackend.controller;
 import com.bishal.ecombackend.dto.CheckoutRequest;
 import com.bishal.ecombackend.dto.OrderResponse;
 import com.bishal.ecombackend.service.OrderService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,17 +21,15 @@ public class OrderController {
 
     private final OrderService orderService;
 
-    // POST /api/orders/checkout or POST /api/orders
     @PostMapping(path = {"/checkout", ""})
     public ResponseEntity<OrderResponse> placeOrder(
             Authentication authentication,
-            @RequestBody(required = false) CheckoutRequest request) {
+            @Valid @RequestBody(required = false) CheckoutRequest request) {
         String username = authentication.getName();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(orderService.checkout(username, request));
     }
 
-    // GET /api/orders (Authenticated User's Order History)
     @GetMapping
     public ResponseEntity<List<OrderResponse>> getMyOrders(
             Authentication authentication,
@@ -39,7 +38,6 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getUserOrders(username, expand));
     }
 
-    // GET /api/orders/{orderId} (Authenticated User's Order Details)
     @GetMapping("/{orderId}")
     public ResponseEntity<OrderResponse> getOrderById(
             Authentication authentication,
@@ -47,5 +45,13 @@ public class OrderController {
             @RequestParam(required = false) String expand) {
         String username = authentication.getName();
         return ResponseEntity.ok(orderService.getUserOrderById(username, orderId, expand));
+    }
+
+    @PutMapping("/{orderId}/cancel")
+    public ResponseEntity<OrderResponse> cancelOrder(
+            Authentication authentication,
+            @PathVariable UUID orderId) {
+        String username = authentication.getName();
+        return ResponseEntity.ok(orderService.cancelOrder(username, orderId));
     }
 }

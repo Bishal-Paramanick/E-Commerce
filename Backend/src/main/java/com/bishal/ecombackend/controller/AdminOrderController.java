@@ -3,6 +3,7 @@ package com.bishal.ecombackend.controller;
 import com.bishal.ecombackend.dto.OrderResponse;
 import com.bishal.ecombackend.dto.UpdateOrderStatusRequest;
 import com.bishal.ecombackend.service.OrderService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -30,7 +31,7 @@ public class AdminOrderController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<OrderResponse> updateStatus(
             @PathVariable UUID id,
-            @RequestBody UpdateOrderStatusRequest request) {
-        return ResponseEntity.ok(orderService.updateOrderStatusAdmin(id, request));
+            @Valid @RequestBody UpdateOrderStatusRequest request) {
+        return ResponseEntity.ok(orderService.updateOrderStatusByAdmin(id, request.getStatus()));
     }
 }

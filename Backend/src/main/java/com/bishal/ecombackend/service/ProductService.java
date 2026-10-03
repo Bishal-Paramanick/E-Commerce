@@ -6,7 +6,7 @@ import com.bishal.ecombackend.model.Category;
 import com.bishal.ecombackend.model.Product;
 import com.bishal.ecombackend.repo.CategoryRepo;
 import com.bishal.ecombackend.repo.ProductRepository;
-import com.bishal.ecombackend.repo.specification.ProductSpecification;
+import com.bishal.ecombackend.specification.ProductSpecification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;

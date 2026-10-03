@@ -3,23 +3,22 @@ package com.bishal.ecombackend.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.Setter;
 import org.springframework.data.domain.Persistable;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @Entity
 @Table(name = "products")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Product implements Persistable {
+public class Product extends BaseAuditableEntity implements Persistable {
 
     @Id
     private UUID id;
@@ -49,22 +48,20 @@ public class Product implements Persistable {
     @ElementCollection(fetch = FetchType.EAGER, targetClass = String.class)
     @CollectionTable(name = "product_keywords", joinColumns = @JoinColumn(name = "product_id"))
     @Column(name = "keyword")
-    private List keywords = new ArrayList<>();
-
-    @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    private List<String> keywords = new ArrayList<>();
 
     @Transient
     @JsonIgnore
     private boolean isNew = true;
 
     @Override
+    public UUID getId() {
+        return this.id;
+    }
+
+    @Override
     public boolean isNew() {
-        return this.isNew || this.createdAt == null;
+        return this.isNew || getCreatedAt() == null;
     }
 
     @PostLoad
