@@ -12,7 +12,14 @@ public class UserMapper {
         Users user = new Users();
         user.setUsername(request.getUsername());
         user.setPassword(request.getPassword());
-        user.setRole("ROLE_USER"); // Enforce default role safely
+        if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
+            user.setEmail(request.getEmail().trim());
+        }
+        if (request.getRole() != null && !request.getRole().trim().isEmpty()) {
+            user.setRole(request.getRole().trim());
+        } else {
+            user.setRole("ROLE_USER");
+        }
         return user;
     }
 

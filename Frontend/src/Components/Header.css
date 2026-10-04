@@ -94,19 +94,55 @@
 .header .right-section {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 14px;
 }
 
+.header .orders-btn,
 .header .orders-link {
-  color: #cbd5e1;
+  color: #f1f5f9;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13.5px;
   text-decoration: none;
+  padding: 7px 15px;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.header .orders-link.active,
-.header .orders-link:hover {
+.header .orders-btn:hover,
+.header .orders-link:hover,
+.header .orders-btn.active,
+.header .orders-link.active {
   color: #ffffff;
+  background: rgba(51, 65, 85, 0.85);
+  border-color: rgba(129, 140, 248, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(99, 102, 241, 0.2);
+}
+
+.header .orders-btn:hover .orders-icon,
+.header .orders-link:hover .orders-icon {
+  stroke: #818cf8;
+  transform: scale(1.08);
+}
+
+.header .orders-btn:active,
+.header .orders-link:active {
+  transform: translateY(0);
+}
+
+.header .orders-icon {
+  stroke: #cbd5e1;
+  transition: transform 0.2s ease, stroke 0.2s ease;
+  flex-shrink: 0;
 }
 
 .header .cart-link {
@@ -139,3 +175,128 @@
   font-size: 14px;
   font-weight: 600;
 }
+
+/* ── Auth & Profile Nav ───────────────────────────────────────────────────── */
+.header-signin-btn {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: #ffffff !important;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 9999px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.header-signin-btn:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+  color: #ffffff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.5);
+}
+
+.header-signin-btn:active {
+  transform: translateY(0);
+}
+
+.header .profile-link {
+  color: #f1f5f9;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  padding: 5px 12px 5px 6px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.header .profile-link:hover,
+.header .profile-link.active {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: #818cf8;
+  color: #ffffff;
+}
+
+.header .user-avatar-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.header .nav-text {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.header-logout-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #334155;
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.header-logout-btn:hover {
+  border-color: #f43f5e;
+  color: #fca5a5;
+  background: rgba(244, 63, 94, 0.12);
+}
+
+@media (max-width: 700px) {
+  .header .nav-text { display: none; }
+  .header .orders-text { display: none; }
+  .header-logout-btn { display: none; }
+  .header-signin-btn { padding: 6px 14px; font-size: 12px; }
+}
+
+/* ── Sign Out Page Transition ──────────────────────────────────────────────── */
+body.auth-signout-fade {
+  opacity: 0.6;
+  filter: blur(1.5px);
+  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), filter 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+button.header-nav-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  color: inherit;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button.header-nav-action-btn:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 4px;
+  border-radius: 4px;
+}

@@ -47,10 +47,13 @@ public class SecurityConfig {
                         .requestMatchers("/uploads/**").permitAll()
 
                         // Public Read-Only Catalog Endpoints
-                        .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**", "/api/categories", "/api/categories/**", "/api/delivery-options", "/api/delivery-options/**").permitAll()
 
                         // Public Webhook from Razorpay
                         .requestMatchers(HttpMethod.POST, "/api/payments/webhook").permitAll()
+
+                        // Admin Reset Endpoint (permits secret header key or ROLE_ADMIN)
+                        .requestMatchers(HttpMethod.POST, "/api/admin/system/reset", "/api/reset").permitAll()
 
                         // Admin Endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
@@ -74,7 +77,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Admin-Reset-Key"));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

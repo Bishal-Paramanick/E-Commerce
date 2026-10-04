@@ -1,0 +1,150 @@
+/* Append to existing CheckoutPage.css */
+
+/* ── Address Selector ─────────────────────────────────────────────────────── */
+.address-selector {
+  background: var(--card-bg);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.section-subtitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0 0 16px;
+}
+
+.addr-mode-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.addr-tab {
+  padding: 7px 16px;
+  border: 1.5px solid var(--border-light);
+  border-radius: 8px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.addr-tab.active,
+.addr-tab:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: rgba(99, 102, 241, 0.06);
+}
+
+.saved-addr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.saved-addr-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--border-light);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.saved-addr-option.selected {
+  border-color: var(--primary-color);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.saved-addr-option input[type="radio"] {
+  margin-top: 3px;
+  accent-color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+.addr-option-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.addr-option-details strong {
+  font-size: 14px;
+  color: var(--text-dark);
+}
+
+.mini-default-badge {
+  display: inline-block;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  margin-left: 6px;
+}
+
+.custom-addr-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  color: var(--text-dark);
+  background: var(--bg-main);
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.custom-addr-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+}
+
+/* Checkout left column */
+.checkout-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.cart-items-section {
+  background: var(--card-bg);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 24px;
+}
+
+/* Spinner in button */
+.btn-spinner-sm {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.place-order-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}

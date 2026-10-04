@@ -1,5 +1,6 @@
-import axios from "axios";
+import { cartApi } from "../../services/api";
 import { formatMoney } from "../../util/money";
+import { getProductImageUrl } from "../../util/imageUrl";
 import { DeliveryOption } from "./DeliveryOption";
 import { useState } from "react";
 
@@ -9,7 +10,8 @@ export function CartItemDetails({ loadCart, cartItem, deliveryOption }) {
   const [showDropdown, setShowDropdown] = useState(false);
 
   const deleteCartItem = async () => {
-    await axios.delete(`/api/cart-items/${cartItem.productId}`);
+    const itemId = cartItem.id || cartItem.productId;
+    await cartApi.deleteItem(itemId);
     await loadCart();
   };
 
@@ -21,9 +23,8 @@ export function CartItemDetails({ loadCart, cartItem, deliveryOption }) {
       return;
     }
 
-    await axios.put(`/api/cart-items/${cartItem.productId}`, {
-      quantity: quantityToSave,
-    });
+    const itemId = cartItem.id || cartItem.productId;
+    await cartApi.updateItem(itemId, quantityToSave);
     await loadCart();
     setIsEditing(false);
   };
@@ -38,8 +39,12 @@ export function CartItemDetails({ loadCart, cartItem, deliveryOption }) {
     <div className="cart-item-details-grid">
       <img
         className="product-image"
-        src={cartItem.product.image}
-        alt={cartItem.product.name}
+        src={getProductImageUrl(cartItem.product?.image || cartItem.image)}
+        alt={cartItem.product?.name || "Product"}
+        onError={(e) => {
+          e.target.onerror = null;
+          e.target.src = "https://placehold.co/150x150?text=Product";
+        }}
       />
 
       <div className="cart-item-details">
@@ -124,10 +129,7 @@ export function CartItemDetails({ loadCart, cartItem, deliveryOption }) {
                           setNewQuantity(num);
                           setShowDropdown(false);
                           // Seamless inline API updates when selecting directly
-                          await axios.put(
-                            `/api/cart-items/${cartItem.productId}`,
-                            { quantity: num },
-                          );
+                          await cartApi.updateItem(cartItem.productId, num);
                           await loadCart();
                           setIsEditing(false);
                         }}

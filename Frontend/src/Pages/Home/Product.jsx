@@ -1,13 +1,26 @@
 import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { formatMoney } from "../../util/money";
+import { getProductImageUrl } from "../../util/imageUrl";
+import { useAuth } from "../../context/AuthContext";
+import { toast } from "../../util/toast";
 import axios from "axios";
 
 export function Product({ product, loadCart }) {
+  const { user, token } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [quantity, setQuantity] = useState(1);
   const [showAdded, setShowAdded] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
 
   const addToCart = async () => {
+    const isAuthenticated = Boolean(user || token || sessionStorage.getItem('token') || localStorage.getItem('token'));
+    if (!isAuthenticated) {
+      toast.info("Please sign in to add items to your cart");
+      navigate("/login", { state: { from: location.pathname } });
+      return;
+    }
     const finalQuantity = quantity === "" || quantity < 1 ? 1 : quantity;
 
     try {
@@ -28,14 +41,20 @@ export function Product({ product, loadCart }) {
     }
   };
 
-  const imageSrc = product.image?.startsWith("/")
-    ? product.image
-    : `/${product.image || ""}`;
+  const imageSrc = getProductImageUrl(product.image);
 
   return (
     <div className="product-container">
       <div className="product-image-container">
-        <img className="product-image" src={imageSrc} alt={product.name} />
+        <img
+          className="product-image"
+          src={imageSrc}
+          alt={product.name}
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = "https://placehold.co/150x150?text=Product";
+          }}
+        />
       </div>
 
       <div className="product-name limit-text-to-2-lines">{product.name}</div>

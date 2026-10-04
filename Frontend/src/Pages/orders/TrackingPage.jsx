@@ -1,10 +1,11 @@
 import { Link, useParams } from "react-router";
 import { Header } from "../../Components/Header";
 import "./TrackingPage.css";
-import axios from "axios";
+import { ordersApi } from "../../services/api";
 import { useState, useEffect } from "react";
 import dayjs from "dayjs";
 import { deliveryPercentage } from "../../util/money";
+import { getProductImageUrl } from "../../util/imageUrl";
 
 export function TrackingPage({ cart }) {
   const { orderId, productId } = useParams();
@@ -14,12 +15,13 @@ export function TrackingPage({ cart }) {
   useEffect(() => {
     const getTrackingDetails = async () => {
       try {
-        const response = await axios.get(
-          `/api/orders/${orderId}?expand=products`
-        );
+        const response = await ordersApi.getById(orderId);
 
         const matchedProduct = response.data.products?.find(
-          (p) => p.product?.id === productId || p.productId === productId
+          (p) =>
+            String(p.product?.id) === String(productId) ||
+            String(p.productId) === String(productId) ||
+            String(p.id) === String(productId)
         );
 
         if (matchedProduct) {
@@ -70,17 +72,16 @@ export function TrackingPage({ cart }) {
   }
 
   const { item, order } = trackingData;
-  const product = item.product || {};
+  const product = item.product || item || {};
+  const title = product.name || item.name || item.productName || "Product";
+  const rawImage = product.image || item.image || "";
+  const imageSrc = getProductImageUrl(rawImage);
   const deliveryPercent = deliveryPercentage({ item, order });
 
   const display = deliveryPercent >= 100 ? "Delivered on" : "Arriving on";
   const isPreparing = deliveryPercent < 33;
   const isShipped = deliveryPercent >= 33 && deliveryPercent < 100;
   const isDelivered = deliveryPercent >= 100;
-
-  const imageSrc = product.image?.startsWith("/")
-    ? product.image
-    : `/${product.image || ""}`;
 
   return (
     <>
@@ -97,13 +98,17 @@ export function TrackingPage({ cart }) {
             {display} {dayjs(item.estimatedDeliveryTimeMs).format("dddd, MMMM D")}
           </div>
 
-          <div className="product-name-info">{product.name}</div>
+          <div className="product-name-info">{title}</div>
           <div className="product-quantity-info">Quantity: {item.quantity}</div>
 
           <img
             className="product-image-preview"
             src={imageSrc}
-            alt={product.name}
+            alt={title}
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = "https://placehold.co/150x150?text=Product";
+            }}
           />
 
           <div className="progress-section">
