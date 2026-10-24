@@ -1,3 +1,6 @@
+import org.gradle.jvm.tasks.Jar
+import org.springframework.boot.gradle.tasks.bundling.BootJar
+
 plugins {
     java
     id("org.springframework.boot") version "3.5.6"
@@ -13,6 +16,8 @@ java {
         languageVersion.set(JavaLanguageVersion.of(25))
     }
 }
+
+
 
 repositories {
     mavenCentral()
@@ -49,7 +54,6 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
 
 
-
     // Testing
     testImplementation("com.h2database:h2")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -59,4 +63,13 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+
+tasks.named<BootJar>("bootJar") {
+    archiveFileName.set("ecommerce-backend.jar")
+}
+
+tasks.named<Jar>("jar") {
+    enabled = false
 }

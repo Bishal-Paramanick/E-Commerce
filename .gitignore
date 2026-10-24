@@ -1,0 +1,25 @@
+# Sensitive Environment Files
+.env
+.env.local
+.env.production
+*.env.local
+*.env
+
+# Local Backend Configs
+Backend/src/main/resources/application-local.properties
+Backend/src/main/resources/application-prod.properties
+application-local.properties
+application-prod.properties
+
+# Build outputs & dependencies
+dist/
+target/
+node_modules/
+build/
+.gradle/
+.idea/
+.vscode/
+*.log
+logs/
+out/
+bin/

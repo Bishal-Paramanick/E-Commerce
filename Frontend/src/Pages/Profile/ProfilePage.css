@@ -1,39 +1,55 @@
-/* ── Profile Page ────────────────────────────────────────────────────────────── */
-.profile-page {
-  min-height: calc(100vh - 70px);
+/* ── Profile Page ────────────────────────────────────────────────────────────
+   Plain CSS (no Tailwind needed for this page). Matches the reference design:
+   32px padded cards with 1.5rem radius, pill role badge, grey inputs,
+   indigo gradient buttons with a soft glow, borderless modal footer.
+   ─────────────────────────────────────────────────────────────────────────── */
+body { outline: 6px solid red !important; }
+.profile-wrapper {
+  min-height: 100vh;
   background: #f8fafc;
-  padding: 112px 16px 64px;
-  max-width: 1024px;
-  margin: 0 auto;
+  padding: 112px 16px 64px; /* top padding clears the fixed header */
   box-sizing: border-box;
 }
 
 .profile-container {
-  max-width: 100%;
+  max-width: 896px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 32px;
 }
 
-
+/* ── Cards ─────────────────────────────────────────────────────────────── */
 .profile-section {
   background: #ffffff;
   border: 1px solid rgba(226, 232, 240, 0.85);
   border-radius: 1.5rem;
   padding: 2rem;
-  box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.05), 0 8px 10px -6px rgba(79, 70, 229, 0.04);
+  box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.05),
+              0 8px 10px -6px rgba(79, 70, 229, 0.04);
 }
 
 .section-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   margin-bottom: 24px;
+}
+
+.section-header.between {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.section-title-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .section-icon {
   font-size: 22px;
+  line-height: 1;
 }
 
 .section-title {
@@ -41,17 +57,57 @@
   font-weight: 700;
   color: #0f172a;
   margin: 0;
-  flex: 1;
 }
 
-/* Profile Update Form */
-.form-subtitle {
-  font-size: 13px;
-  font-weight: 700;
-  color: #475569;
-  margin: 0 0 16px;
-  text-transform: uppercase;
+/* ── Account details ───────────────────────────────────────────────────── */
+.account-meta {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.meta-label {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
   letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.meta-value {
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.role-badge {
+  display: inline-block;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 2px 12px;
+  border-radius: 999px;
+}
+
+.section-divider {
+  border: 0;
+  border-top: 1px solid #e9eef4;
+  margin: 24px 0 32px;
+}
+
+/* ── Forms ─────────────────────────────────────────────────────────────── */
+.form-subtitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 16px;
 }
 
 .form-row {
@@ -64,137 +120,229 @@
   .form-row { grid-template-columns: 1fr; }
 }
 
+.profile-form .form-row {
+  margin-bottom: 16px;
+}
+
 .form-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
 
 .form-field label {
   font-size: 12px;
-  font-weight: 700;
-  color: #475569;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  line-height: 16px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 6px;
 }
 
-.form-field input,
-.form-field select {
-  padding: 10px 14px;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 14px;
-  color: #1e293b;
-  background: rgba(248, 250, 252, 0.8);
-  outline: none;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+.address-form .form-field label {
+  color: #475569;
+}
+
+.form-input {
   width: 100%;
   box-sizing: border-box;
+  height: 39px;
+  padding: 0 16px;
+  font-family: inherit;
+  font-size: 14px;
+  color: #1e293b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  outline: none;
+  transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.form-field input:focus {
-  border-color: transparent;
+.form-input::placeholder {
+  color: #94a3b8;
+}
+
+.form-input:focus {
   background: #ffffff;
+  border-color: transparent;
   box-shadow: 0 0 0 2px #6366f1;
 }
 
-/* Address Grid */
+/* ── Buttons ───────────────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 24px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.38);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* "+ Add Address" */
+.btn-primary.btn-sm {
+  height: 34px;
+  padding: 0 16px;
+  font-size: 12px;
+}
+
+/* "Add Your First Address" - compact pill, as in the reference screenshot.
+   To make it larger, raise the padding (e.g. 8px 20px). */
+.btn-primary.btn-compact {
+  height: auto;
+  padding: 2px 8px;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 22px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #334155;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.btn-secondary:hover {
+  background: #f8fafc;
+}
+
+.btn-secondary:active {
+  transform: scale(0.97);
+}
+
+/* ── Address grid & cards ──────────────────────────────────────────────── */
 .address-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 700px) {
+  .address-grid { grid-template-columns: 1fr; }
 }
 
 .address-card {
-  background: rgba(248, 250, 252, 0.7);
-  border: 1.5px solid rgba(226, 232, 240, 0.9);
-  border-radius: 1rem;
+  background: rgba(248, 250, 252, 0.6);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
   padding: 20px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  position: relative;
-  transition: all 0.2s ease;
+  gap: 8px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .address-card:hover {
-  border-color: #a5b4fc;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.08);
+  border-color: #cbd5e1;
 }
 
 .address-card.default {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15), 0 4px 12px rgba(79, 70, 229, 0.08);
-  background: #ffffff;
+  border-color: #818cf8;
+  box-shadow: 0 0 0 2px #e0e7ff;
 }
 
-.default-badge {
-  display: inline-block;
-  background: #4f46e5;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 999px;
-  width: fit-content;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.address-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .address-name {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: #0f172a;
 }
 
+.default-badge {
+  flex-shrink: 0;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
 .address-line {
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1.6;
   color: #475569;
-  line-height: 1.4;
 }
 
 .address-phone {
-  font-size: 13px;
-  color: #334155;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
 }
 
 .address-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(226, 232, 240, 0.6);
   flex-wrap: wrap;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(226, 232, 240, 0.7);
 }
 
 .address-action-btn {
+  font-family: inherit;
   font-size: 12px;
   font-weight: 600;
   padding: 6px 12px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #ffffff;
-  color: #334155;
+  color: #475569;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .address-action-btn:hover:not(:disabled) {
-  border-color: #a5b4fc;
-  background: #eef2ff;
-  color: #4f46e5;
+  background: #f1f5f9;
 }
 
 .address-action-btn.danger {
   border-color: #fecdd3;
-  color: #e11d48;
+  color: #f43f5e;
 }
 
 .address-action-btn.danger:hover:not(:disabled) {
-  border-color: #fda4af;
   background: #fff1f2;
-  color: #be123c;
 }
 
 .address-action-btn:disabled {
@@ -202,7 +350,22 @@
   cursor: not-allowed;
 }
 
-/* Modal */
+/* ── Empty state ───────────────────────────────────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 40px 0;
+}
+
+.empty-text {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+/* ── Modal ─────────────────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -217,35 +380,27 @@
 
 .modal-card {
   background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
   border-radius: 1.5rem;
   padding: 2rem;
   width: 100%;
-  max-width: 520px;
+  max-width: 39rem;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(226, 232, 240, 0.9);
   animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes modalFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(16px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 24px;
 }
 
 .modal-header h2 {
@@ -256,17 +411,16 @@
 }
 
 .modal-close {
-  background: transparent;
-  border: none;
-  font-size: 18px;
-  color: #94a3b8;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 9999px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  padding: 8px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .modal-close:hover {
@@ -283,17 +437,18 @@
 .checkbox-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  cursor: pointer;
+  gap: 12px;
+  margin: 4px 0;
   font-size: 14px;
-  font-weight: 500;
   color: #334155;
+  cursor: pointer;
   user-select: none;
 }
 
 .checkbox-row input[type="checkbox"] {
   width: 16px;
   height: 16px;
+  margin: 0;
   accent-color: #4f46e5;
   cursor: pointer;
 }
@@ -302,28 +457,15 @@
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #f1f5f9;
+  margin-top: 8px;
 }
 
-/* Empty state */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 40px 20px;
-  color: #64748b;
-  text-align: center;
-}
-
-/* Skeleton */
-.profile-skeleton {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
+/* ── Skeleton ──────────────────────────────────────────────────────────── */
+.address-skeleton-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  background: #f8fafc;
 }
 
 .skeleton {
@@ -340,9 +482,10 @@
 
 .sk-text {
   height: 14px;
+  margin-bottom: 8px;
 }
 
-/* Spinner */
+/* ── Spinner ───────────────────────────────────────────────────────────── */
 .btn-spinner {
   width: 16px;
   height: 16px;

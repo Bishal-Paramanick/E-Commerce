@@ -4,10 +4,24 @@ import { useAuth } from "../../context/AuthContext";
 import { userApi, extractErrorMessage } from "../../services/api";
 import toast from "react-hot-toast";
 
+// ── Shared Tailwind class strings ─────────────────────────────────────────────
+const inputCls =
+  "w-full h-[39px] rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-800 " +
+  "placeholder-slate-400 outline-none transition focus:border-transparent focus:bg-white " +
+  "focus:ring-2 focus:ring-indigo-500";
+
+const primaryBtn =
+  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border-none bg-indigo-600 " +
+  "font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:bg-indigo-500 " +
+  "active:scale-95 disabled:cursor-not-allowed disabled:opacity-70";
+
+const cardCls =
+  "rounded-3xl border border-slate-200/80 bg-white p-8 shadow-xl shadow-indigo-500/5";
+
 // ── Spinner ───────────────────────────────────────────────────────────────────
 function Spinner() {
   return (
-    <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
   );
 }
 
@@ -15,17 +29,19 @@ function Spinner() {
 function AddressModal({ address, onClose, onSaved }) {
   const isEdit = !!address?.id;
   const [form, setForm] = useState({
-    fullName:      address?.fullName      || "",
-    phone:         address?.phone         || "",
+    fullName: address?.fullName || "",
+    phone: address?.phone || "",
     streetAddress: address?.streetAddress || "",
-    landmark:      address?.landmark      || "",
-    city:          address?.city          || "",
-    state:         address?.state         || "",
-    postalCode:    address?.postalCode    || "",
-    country:       address?.country       || "India",
-    isDefault:     address?.isDefault     || false,
+    landmark: address?.landmark || "",
+    city: address?.city || "",
+    state: address?.state || "",
+    postalCode: address?.postalCode || "",
+    country: address?.country || "India",
+    isDefault: address?.isDefault || false,
   });
   const [saving, setSaving] = useState(false);
+
+  const labelCls = "mb-1.5 block text-xs font-semibold text-slate-600";
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -54,25 +70,25 @@ function AddressModal({ address, onClose, onSaved }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4"
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-5 backdrop-blur-sm"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-lg w-full p-8 relative animate-in fade-in duration-150 max-h-[90vh] overflow-y-auto"
+        className="max-h-[90vh] w-full max-w-[39rem] overflow-y-auto rounded-3xl border border-slate-200/90 bg-white p-8 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
-          <h2 className="text-xl font-bold text-slate-900">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="m-0 text-xl font-bold text-slate-900">
             {isEdit ? "Edit Address" : "Add New Address"}
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+            className="flex cursor-pointer items-center justify-center rounded-full border-none bg-transparent p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
           >
             <svg
               width="16"
@@ -80,7 +96,7 @@ function AddressModal({ address, onClose, onSaved }) {
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth="1.75"
               strokeLinecap="round"
               aria-hidden="true"
             >
@@ -89,158 +105,120 @@ function AddressModal({ address, onClose, onSaved }) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {/* Full Name & Phone */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="fullName" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                Full Name *
-              </label>
+              <label htmlFor="fullName" className={labelCls}>Full Name *</label>
               <input
-                id="fullName"
-                name="fullName"
-                required
-                value={form.fullName}
-                onChange={handleChange}
-                placeholder="e.g. Bishal Paramanick"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+                id="fullName" name="fullName" required
+                value={form.fullName} onChange={handleChange}
+                placeholder="John Doe"
+                className={inputCls}
               />
             </div>
             <div>
-              <label htmlFor="phone" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                Phone *
-              </label>
+              <label htmlFor="phone" className={labelCls}>Phone *</label>
               <input
-                id="phone"
-                name="phone"
-                required
-                value={form.phone}
-                onChange={handleChange}
-                placeholder="+91 98765 XXXXX"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+                id="phone" name="phone" required
+                value={form.phone} onChange={handleChange}
+                placeholder="+91 9876543210"
+                className={inputCls}
               />
             </div>
           </div>
 
           {/* Street Address */}
           <div>
-            <label htmlFor="streetAddress" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-              Street Address *
-            </label>
+            <label htmlFor="streetAddress" className={labelCls}>Street Address *</label>
             <input
-              id="streetAddress"
-              name="streetAddress"
-              required
-              value={form.streetAddress}
-              onChange={handleChange}
-              placeholder="e.g. 92, Acharya Prafulla Chandra Road"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+              id="streetAddress" name="streetAddress" required
+              value={form.streetAddress} onChange={handleChange}
+              placeholder="123 Main Street, Apt 4B"
+              className={inputCls}
             />
           </div>
 
           {/* Landmark */}
           <div>
-            <label htmlFor="landmark" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-              Landmark
-            </label>
+            <label htmlFor="landmark" className={labelCls}>Landmark</label>
             <input
-              id="landmark"
-              name="landmark"
-              value={form.landmark}
-              onChange={handleChange}
-              placeholder="Near Rajabazar Science College"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+              id="landmark" name="landmark"
+              value={form.landmark} onChange={handleChange}
+              placeholder="Near Central Park"
+              className={inputCls}
             />
           </div>
 
           {/* City & State */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="city" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                City *
-              </label>
+              <label htmlFor="city" className={labelCls}>City *</label>
               <input
-                id="city"
-                name="city"
-                required
-                value={form.city}
-                onChange={handleChange}
-                placeholder="Kolkata"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+                id="city" name="city" required
+                value={form.city} onChange={handleChange}
+                placeholder="Mumbai"
+                className={inputCls}
               />
             </div>
             <div>
-              <label htmlFor="state" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                State *
-              </label>
+              <label htmlFor="state" className={labelCls}>State *</label>
               <input
-                id="state"
-                name="state"
-                required
-                value={form.state}
-                onChange={handleChange}
-                placeholder="West Bengal"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+                id="state" name="state" required
+                value={form.state} onChange={handleChange}
+                placeholder="Maharashtra"
+                className={inputCls}
               />
             </div>
           </div>
 
           {/* Postal Code & Country */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="postalCode" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                Postal Code *
-              </label>
+              <label htmlFor="postalCode" className={labelCls}>Postal Code *</label>
               <input
-                id="postalCode"
-                name="postalCode"
-                required
-                value={form.postalCode}
-                onChange={handleChange}
-                placeholder="700009"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+                id="postalCode" name="postalCode" required
+                value={form.postalCode} onChange={handleChange}
+                placeholder="400001"
+                className={inputCls}
               />
             </div>
             <div>
-              <label htmlFor="country" className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                Country
-              </label>
+              <label htmlFor="country" className={labelCls}>Country</label>
               <input
-                id="country"
-                name="country"
-                value={form.country}
-                onChange={handleChange}
+                id="country" name="country"
+                value={form.country} onChange={handleChange}
                 placeholder="India"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+                className={inputCls}
               />
             </div>
           </div>
 
           {/* Default checkbox */}
-          <label className="flex items-center gap-2.5 pt-2 text-sm font-medium text-slate-700 cursor-pointer select-none">
+          <label className="my-1 flex cursor-pointer select-none items-center gap-3 text-sm text-slate-700">
             <input
               type="checkbox"
               name="isDefault"
               checked={form.isDefault}
               onChange={handleChange}
-              className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
+              className="h-4 w-4 cursor-pointer accent-indigo-600"
             />
             Set as default address
           </label>
 
           {/* Footer actions */}
-          <div className="flex items-center justify-end gap-3 pt-5 border-t border-slate-100 mt-6">
+          <div className="mt-2 flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+              className="h-10 cursor-pointer rounded-xl border border-slate-200 bg-white px-[22px] text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-95"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-sm transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 cursor-pointer"
+              className={`${primaryBtn} h-10 px-[22px] text-sm`}
             >
               {saving ? <Spinner /> : isEdit ? "Save Changes" : "Add Address"}
             </button>
@@ -283,48 +261,45 @@ function AddressCard({ address, onEdit, onDelete, onSetDefault }) {
     }
   };
 
+  const linkBtn =
+    "cursor-pointer border-none bg-transparent p-0 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50";
+
   return (
     <div
-      className={`rounded-2xl p-5 border flex flex-col justify-between transition-all duration-200 ${
-        address.isDefault
-          ? "bg-white border-indigo-600 ring-2 ring-indigo-500/20 shadow-sm"
-          : "bg-slate-50/70 border-slate-200/90 hover:border-indigo-300 hover:shadow-sm"
-      }`}
+      className={`flex flex-col gap-2 rounded-2xl border bg-slate-50/60 p-5 transition ${address.isDefault
+        ? "border-indigo-400 ring-2 ring-indigo-100"
+        : "border-slate-200 hover:border-slate-300"
+        }`}
     >
-      <div className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="font-bold text-slate-900 text-base">{address.fullName}</h3>
-          {address.isDefault && (
-            <span className="bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full">
-              Default
-            </span>
-          )}
-        </div>
-
-        <div className="text-xs text-slate-600 leading-relaxed">
-          <p>
-            {address.streetAddress}
-            {address.landmark && <>, {address.landmark}</>}
-          </p>
-          <p>
-            {address.city}, {address.state} – {address.postalCode}
-          </p>
-          <p>{address.country}</p>
-        </div>
-
-        <div className="text-xs font-medium text-slate-700">
-          📞 {address.phone}
-        </div>
+      <div className="flex items-start justify-between gap-2">
+        <div className="text-sm font-bold text-slate-900">{address.fullName}</div>
+        {address.isDefault && (
+          <span className="shrink-0 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-indigo-600">
+            Default
+          </span>
+        )}
       </div>
 
-      <div className="flex items-center gap-2 pt-4 mt-4 border-t border-slate-200/70 text-xs">
+      <div className="text-xs leading-relaxed text-slate-600">
+        {address.streetAddress}
+        {address.landmark && <>, {address.landmark}</>}
+        <br />
+        {address.city}, {address.state} – {address.postalCode}
+        <br />
+        {address.country}
+      </div>
+
+      <div className="text-xs font-medium text-slate-600">📞 {address.phone}</div>
+
+      <div className="mt-1 flex flex-wrap items-center gap-2 border-t border-slate-200/70 pt-3">
         <button
           type="button"
           onClick={() => onEdit(address)}
-          className="font-semibold text-slate-600 hover:text-indigo-600 transition-colors cursor-pointer"
+          className={`${linkBtn} text-indigo-600 hover:text-indigo-500`}
         >
           Edit
         </button>
+
         {!address.isDefault && (
           <>
             <span className="text-slate-300">|</span>
@@ -332,18 +307,19 @@ function AddressCard({ address, onEdit, onDelete, onSetDefault }) {
               type="button"
               onClick={handleSetDefault}
               disabled={settingDefault}
-              className="font-semibold text-slate-600 hover:text-indigo-600 transition-colors disabled:opacity-50 cursor-pointer"
+              className={`${linkBtn} text-slate-600 hover:text-slate-900`}
             >
               {settingDefault ? "Setting…" : "Set Default"}
             </button>
           </>
         )}
+
         <span className="text-slate-300">|</span>
         <button
           type="button"
           onClick={handleDelete}
           disabled={deleting}
-          className="font-semibold text-rose-600 hover:text-rose-700 transition-colors disabled:opacity-50 cursor-pointer"
+          className={`${linkBtn} text-rose-500 hover:text-rose-600`}
         >
           {deleting ? "Removing…" : "Remove"}
         </button>
@@ -356,21 +332,19 @@ function AddressCard({ address, onEdit, onDelete, onSetDefault }) {
 export function ProfilePage({ cart }) {
   const { user, profile, fetchProfile } = useAuth();
 
-  const [addresses, setAddresses]       = useState([]);
-  const [loadingAddr, setLoadingAddr]   = useState(true);
+  const [addresses, setAddresses] = useState([]);
+  const [loadingAddr, setLoadingAddr] = useState(true);
   const [addressModal, setAddressModal] = useState(null); // null | "new" | address object
 
   // Profile update state
-  const [email, setEmail]                 = useState(() => profile?.email || "");
-  const [newPassword, setNewPassword]     = useState("");
+  const [email, setEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
 
-  // Sync email when profile changes
-  const [prevProfileEmail, setPrevProfileEmail] = useState(profile?.email);
-  if (profile?.email && profile.email !== prevProfileEmail) {
-    setPrevProfileEmail(profile.email);
-    setEmail(profile.email);
-  }
+  // Sync email from profile
+  useEffect(() => {
+    if (profile?.email) setEmail(profile.email);
+  }, [profile]);
 
   const loadAddresses = async () => {
     setLoadingAddr(true);
@@ -384,34 +358,14 @@ export function ProfilePage({ cart }) {
     }
   };
 
-  useEffect(() => {
-    let ignore = false;
-    userApi
-      .getAddresses()
-      .then((res) => {
-        if (!ignore) {
-          setAddresses(res.data || []);
-          setLoadingAddr(false);
-        }
-      })
-      .catch(() => {
-        if (!ignore) {
-          setAddresses([]);
-          setLoadingAddr(false);
-        }
-      });
-
-    return () => {
-      ignore = true;
-    };
-  }, []);
+  useEffect(() => { loadAddresses(); }, []);
 
   const handleProfileSave = async (e) => {
     e.preventDefault();
     setSavingProfile(true);
     try {
       const payload = {};
-      if (email)       payload.email    = email;
+      if (email) payload.email = email;
       if (newPassword) payload.password = newPassword;
       await userApi.updateProfile(payload);
       await fetchProfile();
@@ -429,45 +383,45 @@ export function ProfilePage({ cart }) {
       <title>My Account | BISHAL-MART</title>
       <Header cart={cart} />
 
-      <div className="min-h-screen bg-slate-50/50 pt-28 pb-16 px-4">
-        <div className="max-w-5xl mx-auto space-y-8">
+      <div className="min-h-screen bg-slate-50 px-4 pb-16 pt-28">
+        <div className="mx-auto flex max-w-4xl flex-col gap-8">
 
           {/* ── Card 1: Account Details ── */}
-          <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <span className="text-2xl">👤</span>
-              <h2 className="text-xl font-bold text-slate-900">Account Details</h2>
+          <section className={cardCls}>
+            <div className="mb-6 flex items-center gap-4">
+              <span className="text-[22px] leading-none">👤</span>
+              <h2 className="m-0 text-xl font-bold text-slate-900">Account Details</h2>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pb-6 border-b border-slate-100">
+            <div className="flex flex-wrap items-start gap-6">
               <div>
-                <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">
-                  USERNAME
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Username
                 </div>
-                <div className="text-base font-semibold text-slate-800">
+                <div className="text-base font-semibold text-slate-900">
                   {user?.username || "—"}
                 </div>
               </div>
               <div>
-                <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">
-                  ROLE
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Role
                 </div>
-                <span className="inline-flex items-center bg-indigo-50 text-indigo-600 px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                <span className="inline-block rounded-full bg-indigo-50 px-3 py-0.5 text-xs font-semibold uppercase text-indigo-600">
                   {user?.role?.replace("ROLE_", "") || "USER"}
                 </span>
               </div>
             </div>
 
-            <form className="mt-6 space-y-6" onSubmit={handleProfileSave}>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                Update Profile
-              </h3>
+            <hr className="mb-8 mt-6 border-0 border-t border-slate-200" />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleProfileSave}>
+              <h3 className="mb-4 mt-0 text-sm font-bold text-slate-900">Update Profile</h3>
+
+              <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label
                     htmlFor="profile-email"
-                    className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5"
+                    className="mb-1.5 block text-xs font-semibold text-slate-500"
                   >
                     Email
                   </label>
@@ -477,13 +431,13 @@ export function ProfilePage({ cart }) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="your@email.com"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+                    className={inputCls}
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="profile-password"
-                    className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5"
+                    className="mb-1.5 block text-xs font-semibold text-slate-500"
                   >
                     New Password
                   </label>
@@ -493,7 +447,7 @@ export function ProfilePage({ cart }) {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Leave blank to keep current"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+                    className={inputCls}
                   />
                 </div>
               </div>
@@ -501,7 +455,7 @@ export function ProfilePage({ cart }) {
               <button
                 type="submit"
                 disabled={savingProfile}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow-sm transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 cursor-pointer"
+                className={`${primaryBtn} h-10 px-6 text-sm`}
               >
                 {savingProfile ? <Spinner /> : "Save Changes"}
               </button>
@@ -509,47 +463,44 @@ export function ProfilePage({ cart }) {
           </section>
 
           {/* ── Card 2: Address Book ── */}
-          <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-8">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">📍</span>
-                <h2 className="text-xl font-bold text-slate-900">Address Book</h2>
+          <section className={cardCls}>
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-4">
+                <span className="text-[22px] leading-none">📍</span>
+                <h2 className="m-0 text-xl font-bold text-slate-900">Address Book</h2>
               </div>
               <button
                 type="button"
                 onClick={() => setAddressModal("new")}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold px-4 py-2 rounded-full shadow-sm transition active:scale-95 inline-flex items-center gap-1 cursor-pointer"
+                className={`${primaryBtn} h-[34px] px-4 text-xs`}
               >
                 + Add Address
               </button>
             </div>
 
             {loadingAddr ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {[1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 space-y-3 animate-pulse"
-                  >
-                    <div className="h-4 bg-slate-200 rounded w-3/5" />
-                    <div className="h-3 bg-slate-200 rounded w-4/5" />
-                    <div className="h-3 bg-slate-200 rounded w-1/2" />
+                  <div key={i} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                    <div className="mb-2 h-3.5 animate-pulse rounded-lg bg-slate-200" style={{ width: "60%" }} />
+                    <div className="mb-2 h-3.5 animate-pulse rounded-lg bg-slate-200" style={{ width: "90%" }} />
+                    <div className="h-3.5 animate-pulse rounded-lg bg-slate-200" style={{ width: "50%" }} />
                   </div>
                 ))}
               </div>
             ) : addresses.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                <p className="text-slate-500 text-sm mb-4">No saved addresses yet.</p>
+              <div className="flex flex-col items-center gap-4 py-10">
+                <p className="m-0 text-sm text-slate-500">No saved addresses yet.</p>
                 <button
                   type="button"
                   onClick={() => setAddressModal("new")}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm px-5 py-2.5 rounded-xl shadow-sm transition active:scale-95 cursor-pointer"
+                  className={`${primaryBtn} px-2 py-0.5 text-xs`}
                 >
                   Add Your First Address
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {addresses.map((addr) => (
                   <AddressCard
                     key={addr.id}
