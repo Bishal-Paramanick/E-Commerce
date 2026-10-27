@@ -1,9 +1,10 @@
 package com.bishal.ecombackend.service;
 
-import com.bishal.ecombackend.model.Order;
-import com.bishal.ecombackend.model.OrderStatus;
-import com.bishal.ecombackend.repo.OrderRepository;
-import com.bishal.ecombackend.repo.ProductRepository;
+import com.bishal.ecombackend.order.model.Order;
+import com.bishal.ecombackend.order.model.OrderStatus;
+import com.bishal.ecombackend.order.repo.OrderRepository;
+import com.bishal.ecombackend.payment.service.PaymentService;
+import com.bishal.ecombackend.product.service.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.razorpay.RazorpayClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +33,7 @@ class PaymentServiceTest {
     private OrderRepository orderRepository;
 
     @Mock
-    private ProductRepository productRepository;
+    private ProductService productService;
 
     @Mock
     private RazorpayClient razorpayClient;

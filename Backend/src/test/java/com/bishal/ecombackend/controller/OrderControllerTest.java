@@ -1,11 +1,12 @@
 package com.bishal.ecombackend.controller;
 
-import com.bishal.ecombackend.dto.CheckoutRequest;
-import com.bishal.ecombackend.dto.OrderResponse;
-import com.bishal.ecombackend.filter.JwtFilter;
-import com.bishal.ecombackend.model.OrderStatus;
-import com.bishal.ecombackend.service.JWTService;
-import com.bishal.ecombackend.service.OrderService;
+import com.bishal.ecombackend.order.dto.CheckoutRequest;
+import com.bishal.ecombackend.order.dto.OrderResponse;
+import com.bishal.ecombackend.common.filter.JwtFilter;
+import com.bishal.ecombackend.order.controller.OrderController;
+import com.bishal.ecombackend.order.model.OrderStatus;
+import com.bishal.ecombackend.user.service.JWTService;
+import com.bishal.ecombackend.order.service.OrderService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
