@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CheckoutHeader } from "./CheckoutHeader";
 import { CartItemDetails } from "./CartItemDetails";
@@ -131,7 +131,6 @@ function OrderOverlay({ state }) {
 function PaymentPanel({
   cart,
   deliveryOptions,
-  addresses,
   selectedAddressId,
   customAddress,
   loadCart,

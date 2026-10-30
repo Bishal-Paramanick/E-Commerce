@@ -1,7 +1,7 @@
-import axios from "axios";
-import { formatMoney } from "../../util/money";
-import { useNavigate } from "react-router";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../../api/api"; // adjust to your api.js location
+import { formatMoney } from "../../util/money";
 import "./PaymentSummary.css";
 
 export function PaymentSummary({
@@ -52,23 +52,23 @@ export function PaymentSummary({
   };
 
   const createOrder = async () => {
-    // 1. Immediately trigger the full-screen round loading overlay
+    // 1. Show the full-screen loading overlay
     setOrderState("loading");
 
     try {
-      // 2. Submit order to the backend
-      await axios.post("/api/orders", {
+      // 2. Submit order (api instance attaches the Bearer JWT)
+      await api.post("/orders", {
         orderTimeMs: Date.now(),
         totalCostCents: summary.totalCostCents,
       });
 
-      // 3. Keep the round spinner visible for 2 seconds
+      // 3. Keep the spinner visible for 2 seconds
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // 4. Switch to the success message with animated green checkmark
+      // 4. Switch to the animated success checkmark
       setOrderState("success");
 
-      // 5. Keep the success tick on screen for 1.8 seconds
+      // 5. Keep the checkmark on screen for 1.8 seconds
       await new Promise((resolve) => setTimeout(resolve, 1800));
 
       // 6. Reload cart state
@@ -76,11 +76,14 @@ export function PaymentSummary({
         await loadCart();
       }
 
-      // 7. Route directly to the orders page
+      // 7. Go to the orders page
       navigate("/orders");
     } catch (error) {
       console.error("Error creating order:", error);
-      alert("Failed to place order. Please try again.");
+      alert(
+        error?.response?.data?.message ||
+          "Failed to place order. Please try again."
+      );
       setOrderState("idle");
     }
   };
@@ -95,7 +98,9 @@ export function PaymentSummary({
               <>
                 <div className="order-spinner"></div>
                 <h3 className="overlay-heading">Processing Order...</h3>
-                <p className="overlay-subtext">Securing your items and confirming payment</p>
+                <p className="overlay-subtext">
+                  Securing your items and confirming payment
+                </p>
               </>
             )}
 
@@ -121,8 +126,12 @@ export function PaymentSummary({
                     />
                   </svg>
                 </div>
-                <h3 className="overlay-heading success">Order Placed Successfully!</h3>
-                <p className="overlay-subtext">Redirecting to your orders page...</p>
+                <h3 className="overlay-heading success">
+                  Order Placed Successfully!
+                </h3>
+                <p className="overlay-subtext">
+                  Redirecting to your orders page...
+                </p>
               </>
             )}
           </div>
@@ -173,7 +182,7 @@ export function PaymentSummary({
           onClick={createOrder}
           disabled={orderState !== "idle" || summary.totalItems === 0}
         >
-          Place your order
+          {orderState === "loading" ? "Placing Order..." : "Place your order"}
         </button>
       </div>
     </>

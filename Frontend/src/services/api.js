@@ -1,8 +1,12 @@
 import axios from "axios";
 
+// Read API host from Vite env, fallback to localhost for development
+const API_HOST = import.meta.env.VITE_API_HOST || "http://localhost:8080";
+
 // ─── Axios Instance ───────────────────────────────────────────────────────────
 const api = axios.create({
-  baseURL: "/api",
+  // In production, baseURL becomes https://e-commerce-bc6r.onrender.com/api
+  baseURL: `${API_HOST}/api`,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -53,9 +57,6 @@ export function extractErrorMessage(error) {
 }
 
 // ─── API Host & Public Auth Endpoints ─────────────────────────────────────────
-// Note: In Spring Boot SecurityConfig, public endpoints are at root /login and /register
-const API_HOST = import.meta.env.VITE_API_HOST || "http://localhost:8080";
-
 export const authApi = {
   login: (credentials) =>
     axios.post(`${API_HOST}/login`, {
