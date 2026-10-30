@@ -15,7 +15,7 @@ ENV GRADLE_OPTS="-Dorg.gradle.internal.http.connectionTimeout=120000 -Dorg.gradl
 
 COPY gradlew .
 COPY gradle gradle
-COPY build.gradle* settings.gradle* gradle.properties* ./
+COPY build.gradle settings.gradle gradle.properties ./
 
 # Fix Windows line endings, make executable, raise wrapper download timeout (default is 10s)
 RUN sed -i 's/\r$//' gradlew \
@@ -25,7 +25,7 @@ RUN sed -i 's/\r$//' gradlew \
 # Download the Gradle distribution (cached layer). Retries 3 times, fails the build if all fail.
 RUN for i in 1 2 3; do ./gradlew --version --no-daemon && exit 0; echo "Retry $i..."; sleep 5; done; exit 1
 
-# Download project dependencies (cached layer). No "|| true", so errors are visible.
+# Download project dependencies (cached layer)
 RUN ./gradlew dependencies --no-daemon > /dev/null
 
 COPY src src
@@ -48,8 +48,8 @@ RUN dnf install -y shadow-utils \
     && dnf clean all \
     && rm -rf /var/cache/dnf
 
-# Your bootJar is named ecommerce-backend.jar in build.gradle.kts
-COPY --from=builder --chown=1001:1001 /build/build/libs/ecommerce-backend.jar app.jar
+# Ensure your jar matches build/libs (using wildcard *.jar is safest)
+COPY --from=builder --chown=1001:1001 /build/build/libs/*.jar app.jar
 
 USER 1001:1001
 
