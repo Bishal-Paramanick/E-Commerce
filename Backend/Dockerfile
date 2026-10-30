@@ -15,7 +15,7 @@ ENV GRADLE_OPTS="-Dorg.gradle.internal.http.connectionTimeout=120000 -Dorg.gradl
 
 COPY gradlew .
 COPY gradle gradle
-COPY build.gradle settings.gradle gradle.properties ./
+COPY build.gradle* settings.gradle* gradle.properties* ./
 
 # Fix Windows line endings, make executable, raise wrapper download timeout (default is 10s)
 RUN sed -i 's/\r$//' gradlew \
