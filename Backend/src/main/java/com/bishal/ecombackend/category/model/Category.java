@@ -1,6 +1,6 @@
 package com.bishal.ecombackend.category.model;
 
-import com.bishal.ecombackend.product.model.Product;
+import  com.bishal.ecombackend.product.model.Product;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
@@ -29,13 +29,13 @@ public class Category {
     @Column(length = 255)
     private String description;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
-    @JsonIgnoreProperties({"subCategories", "parentCategory", "products", "hibernateLazyInitializer", "handler"})
     private Category parentCategory;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "parentCategory", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties({"parentCategory", "products", "hibernateLazyInitializer", "handler"})
     private List<Category> subCategories = new ArrayList<>();
 
     @JsonIgnore

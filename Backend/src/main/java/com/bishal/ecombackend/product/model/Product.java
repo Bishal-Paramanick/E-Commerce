@@ -3,6 +3,7 @@ package com.bishal.ecombackend.product.model;
 import com.bishal.ecombackend.common.model.BaseAuditableEntity;
 import com.bishal.ecombackend.category.model.Category;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -20,7 +21,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Product extends BaseAuditableEntity implements Persistable {
+public class Product extends BaseAuditableEntity implements Persistable<UUID> {
 
     @Id
     private UUID id;
@@ -42,6 +43,7 @@ public class Product extends BaseAuditableEntity implements Persistable {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "category_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Category category;
 
     @Embedded
@@ -62,6 +64,7 @@ public class Product extends BaseAuditableEntity implements Persistable {
     }
 
     @Override
+    @JsonIgnore
     public boolean isNew() {
         return this.isNew || getCreatedAt() == null;
     }
