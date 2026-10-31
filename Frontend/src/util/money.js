@@ -2,14 +2,14 @@ import dayjs from "dayjs";
 
 export function formatMoney(amountCents) {
   // Multiply dollar value by 92 for INR conversion
-  const rupees = (Number(amountCents || 0) / 100) * 5.2;
+  const rupees = (Number(amountCents || 0) / 100) * 52;
 
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
     maximumFractionDigits: 2,
     minimumFractionDigits: 2,
-  }).format(rupees);
+  }).format(rupees/10);
 }
 
 export function deliveryPercentage({ item, order }) {
