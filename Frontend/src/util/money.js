@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 
 export function formatMoney(amountCents) {
   // Multiply dollar value by 92 for INR conversion
-  const rupees = (Number(amountCents || 0) / 100) * 52;
+  const rupees = (Number(amountCents || 0) / 100) * 5.2;
 
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
