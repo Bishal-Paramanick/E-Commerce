@@ -36,6 +36,7 @@ public class ProductService {
     private static final String UPLOAD_DIR = "uploads/products/";
 
     // 1. Dynamic filtering + Pagination at the database level
+    @Transactional(readOnly = true)
     public Page<ProductDTO> getProducts(
             String search,
             Long categoryId,
@@ -53,6 +54,7 @@ public class ProductService {
     }
 
     // 2. Fetch single product by UUID (DTO for presentation)
+    @Transactional(readOnly = true)
     public ProductDTO getProductById(UUID productId) {
         Product product = getProduct(productId);
         return productMapper.toDTO(product);

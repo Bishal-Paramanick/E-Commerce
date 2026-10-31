@@ -16,7 +16,15 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "products")
+@Table(
+    name = "products",
+    indexes = {
+        @Index(name = "idx_product_category", columnList = "category_id"),
+        @Index(name = "idx_product_brand", columnList = "brand"),
+        @Index(name = "idx_product_price", columnList = "priceCents"),
+        @Index(name = "idx_product_stock", columnList = "stockQuantity")
+    }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -49,6 +57,7 @@ public class Product extends BaseAuditableEntity implements Persistable<UUID> {
     @Embedded
     private Rating rating;
 
+    @org.hibernate.annotations.BatchSize(size = 25)
     @ElementCollection(fetch = FetchType.EAGER, targetClass = String.class)
     @CollectionTable(name = "product_keywords", joinColumns = @JoinColumn(name = "product_id"))
     @Column(name = "keyword")

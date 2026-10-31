@@ -1,26 +1,113 @@
-# Sensitive Environment Files
-.env
-.env.local
-.env.production
-*.env.local
-*.env
-
-# Local Backend Configs
-Backend/src/main/resources/application-local.properties
-Backend/src/main/resources/application-prod.properties
-application-local.properties
-application-prod.properties
-
-# Build outputs & dependencies
-dist/
-target/
-node_modules/
-build/
-.gradle/
-.idea/
-.vscode/
-*.log
-logs/
-out/
-bin/
+# ==============================================================================
+# Workspace, Notes & Documentation
+# ==============================================================================
+HELP.md
 IDEAL_PROJECT_STRUCTURE.txt
+goals
+goals.*
+.goals
+**/goals
+**/goals.*
+**/.goals
+uploads/
+
+# ==============================================================================
+# Sensitive Environment Files & Local Configs
+# ==============================================================================
+.env
+.env.*
+*.env
+*.env.local
+.env.production
+!.env.example
+**/application-local.properties
+**/application-prod.properties
+
+# ==============================================================================
+# Logs & Process Outputs
+# ==============================================================================
+logs/
+**/logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ==============================================================================
+# Backend (Java / Spring Boot / Gradle / DB)
+# ==============================================================================
+.gradle/
+**/.gradle/
+build/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+target/
+**/target/
+out/
+**/out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+bin/
+**/bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+Backend/init-db/
+
+# ==============================================================================
+# Frontend (Node / React / Vite / Bundler)
+# ==============================================================================
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+dist-ssr/
+**/dist-ssr/
+*.local
+
+# ==============================================================================
+# IDEs & Editor Configuration
+# ==============================================================================
+# Visual Studio Code
+.vscode/*
+**/.vscode/*
+!.vscode/extensions.json
+!**/.vscode/extensions.json
+
+# IntelliJ IDEA
+.idea/
+**/.idea/
+*.iws
+*.iml
+*.ipr
+
+# Eclipse / Spring Tool Suite (STS)
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/nbdist/
+/.nb-gradle/
+
+# OS / Miscellaneous Editor Files
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+**/HELP.md
+HELP.md

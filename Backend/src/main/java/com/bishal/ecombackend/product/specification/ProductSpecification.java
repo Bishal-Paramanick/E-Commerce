@@ -20,13 +20,12 @@ public class ProductSpecification {
             Boolean inStock) {
 
         return (root, query, cb) -> {
-            if (query != null) {
-                query.distinct(true);
-            }
-
             List<Predicate> predicates = new ArrayList<>();
 
             if (search != null && !search.trim().isEmpty()) {
+                if (query != null) {
+                    query.distinct(true);
+                }
                 String pattern = "%" + search.trim().toLowerCase() + "%";
 
                 Predicate nameLike = cb.like(cb.lower(root.get("name")), pattern);

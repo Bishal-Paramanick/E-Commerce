@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { Header } from "../../Components/Header";
 import { ProductModal } from "../../Components/ProductModal";
-import { productsApi, cartApi, extractErrorMessage } from "../../services/api";
+import { productsApi, cartApi, extractErrorMessage, clientCache } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { formatMoney } from "../../util/money";
 import { getProductImageUrl } from "../../util/imageUrl";
 import { toast } from "../../util/toast";
-import { SlidersHorizontal, X } from "lucide-react";
+import { OptimizedImage } from "../../Components/OptimizedImage";
+import { SlidersHorizontal, X, Sparkles, ShieldCheck, Truck, Zap } from "lucide-react";
 import "./CatalogPage.css";
 
 // ── Skeleton Card ─────────────────────────────────────────────────────────────
@@ -15,7 +16,12 @@ function SkeletonCard() {
   return (
     <div className="product-card skeleton-card" aria-busy="true">
       <div className="skeleton sk-image" />
+      <div className="sk-meta-row flex gap-2 my-1">
+        <div className="skeleton h-3.5 w-16 rounded-full" />
+        <div className="skeleton h-3.5 w-12 rounded-full" />
+      </div>
       <div className="skeleton sk-text sk-title" />
+      <div className="skeleton sk-text sk-rating" />
       <div className="skeleton sk-text sk-price" />
       <div className="skeleton sk-text sk-btn" />
     </div>
@@ -81,15 +87,13 @@ export function StarRating({ rating, count, value, product }) {
 }
 
 // ── Product Card ──────────────────────────────────────────────────────────────
-export function ProductCard({ product, onAddToCart, onOpenModal }) {
+export function ProductCard({ product, onAddToCart, onOpenModal, priority = false }) {
   const { user, token } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [qty, setQty] = useState(1);
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
-
-  const imageSrc = getProductImageUrl(product.image);
 
   const handleAddToCart = async () => {
     const isAuthenticated = Boolean(user || token || sessionStorage.getItem('token') || localStorage.getItem('token'));
@@ -122,15 +126,12 @@ export function ProductCard({ product, onAddToCart, onOpenModal }) {
         tabIndex={0}
         onKeyDown={(e) => e.key === "Enter" && onOpenModal?.(product)}
       >
-        <img
-          className="product-image"
-          src={imageSrc}
+        <OptimizedImage
+          src={product.image}
           alt={product.name}
-          loading="lazy"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = "https://placehold.co/150x150?text=Product";
-          }}
+          priority={priority}
+          className="product-image"
+          containerClassName="product-image-inner"
         />
       </div>
 
@@ -421,10 +422,9 @@ export function CatalogPage({ cart, loadCart }) {
       .catch(() => {});
   }, []);
 
-  // Load products on filter/page change
+  // Load products on filter/page change with SWR synchronous cache hydration
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
 
     const params = {
       page: currentPage,
@@ -437,6 +437,26 @@ export function CatalogPage({ cart, loadCart }) {
     if (inStockOnly) params.inStock = true;
     if (minPrice > 0) params.minPriceCents = minPrice;
     if (maxPriceParam && maxPrice < MAX_PRICE_CENTS) params.maxPriceCents = maxPrice;
+
+    // Synchronous Cache Check: If data exists in memory cache, display it instantly (zero layout shift/flicker)
+    const cacheKey = clientCache.createKey("/products", params);
+    const cached = clientCache.get(cacheKey, 3 * 60 * 1000);
+
+    if (cached && cached.data) {
+      const data = cached.data;
+      if (Array.isArray(data)) {
+        setProducts(data);
+        setTotalPages(1);
+        setTotalElements(data.length);
+      } else {
+        setProducts(data.content || []);
+        setTotalPages(data.totalPages || 1);
+        setTotalElements(data.totalElements || 0);
+      }
+      setLoading(false); // Do not flash skeleton if we already have valid cache
+    } else {
+      setLoading(true);
+    }
 
     productsApi
       .list(params)
@@ -457,9 +477,11 @@ export function CatalogPage({ cart, loadCart }) {
       .catch((err) => {
         if (!cancelled) {
           console.error("Failed to load products:", err);
-          setProducts([]);
-          setTotalPages(0);
-          setTotalElements(0);
+          if (!cached) {
+            setProducts([]);
+            setTotalPages(0);
+            setTotalElements(0);
+          }
         }
       })
       .finally(() => {
@@ -525,6 +547,57 @@ export function CatalogPage({ cart, loadCart }) {
       <Header cart={cart} />
 
       <div className="catalog-layout">
+        {/* ── Modern Hero Section Banner ── */}
+        <section className="catalog-hero-banner" aria-label="Welcome Banner">
+          <div className="hero-content">
+            <div className="hero-pill-badge">
+              <Sparkles size={14} className="text-amber-400" />
+              <span>Premium Curated Catalog</span>
+            </div>
+            <h1 className="hero-title">
+              Elevate Your Everyday <span className="hero-gradient-text">Lifestyle</span>
+            </h1>
+            <p className="hero-subtitle">
+              Discover top-rated tech, designer apparel, and home essentials with verified reviews, instant dispatch, and secure zero-fee checkout.
+            </p>
+            <div className="hero-badges-row">
+              <div className="hero-badge-item">
+                <Zap size={15} className="text-indigo-400" />
+                <span>Express Same-Day Dispatch</span>
+              </div>
+              <div className="hero-badge-item">
+                <ShieldCheck size={15} className="text-emerald-400" />
+                <span>100% Authentic Quality</span>
+              </div>
+              <div className="hero-badge-item">
+                <Truck size={15} className="text-sky-400" />
+                <span>Hassle-Free Returns</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Category Quick-Pill Bar (Touch-friendly 1-tap filtering) ── */}
+        <nav className="category-pills-bar" aria-label="Quick Category Filter">
+          <button
+            type="button"
+            className={`category-pill-btn ${!categoryId ? "active" : ""}`}
+            onClick={() => updateParam("categoryId", "")}
+          >
+            All Products
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              className={`category-pill-btn ${String(categoryId) === String(cat.id) ? "active" : ""}`}
+              onClick={() => updateParam("categoryId", cat.id)}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </nav>
+
         {/* ── Catalog Toolbar ── */}
         <div className="catalog-toolbar">
           <button
@@ -714,10 +787,11 @@ export function CatalogPage({ cart, loadCart }) {
           <div className="products-grid">
             {loading
               ? Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)
-              : products.map((p) => (
+              : products.map((p, i) => (
                   <ProductCard
                     key={p.id}
                     product={p}
+                    priority={i < 4}
                     onAddToCart={handleAddToCart}
                     onOpenModal={setSelectedProduct}
                   />

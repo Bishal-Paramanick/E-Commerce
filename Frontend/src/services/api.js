@@ -1,4 +1,5 @@
 import axios from "axios";
+import { clientCache } from "./cache";
 
 // Read API host from Vite env, fallback to localhost for development
 const API_HOST = import.meta.env.VITE_API_HOST || "http://localhost:8080";
@@ -71,11 +72,57 @@ export const authApi = {
     }),
 };
 
-// ─── Products Endpoints ───────────────────────────────────────────────────────
+// ─── Products Endpoints with Stale-While-Revalidate Caching ───────────────────
 export const productsApi = {
-  list: (params) => api.get("/products", { params }),
-  getById: (id) => api.get(`/products/${id}`),
-  getCategories: () => api.get("/categories"),
+  list: async (params, { forceRefresh = false } = {}) => {
+    const cacheKey = clientCache.createKey("/products", params);
+    const cached = clientCache.get(cacheKey, 3 * 60 * 1000); // 3 minutes fresh TTL
+
+    if (!forceRefresh && cached) {
+      // Revalidate in background if stale
+      if (cached.isStale) {
+        api.get("/products", { params }).then((res) => {
+          clientCache.set(cacheKey, res.data);
+        }).catch(() => {});
+      }
+      return { data: cached.data, fromCache: true };
+    }
+
+    const res = await api.get("/products", { params });
+    clientCache.set(cacheKey, res.data);
+    return res;
+  },
+
+  getById: async (id, { forceRefresh = false } = {}) => {
+    const cacheKey = `/products/${id}`;
+    const cached = clientCache.get(cacheKey, 5 * 60 * 1000);
+
+    if (!forceRefresh && cached) {
+      if (cached.isStale) {
+        api.get(`/products/${id}`).then((res) => {
+          clientCache.set(cacheKey, res.data);
+        }).catch(() => {});
+      }
+      return { data: cached.data, fromCache: true };
+    }
+
+    const res = await api.get(`/products/${id}`);
+    clientCache.set(cacheKey, res.data);
+    return res;
+  },
+
+  getCategories: async ({ forceRefresh = false } = {}) => {
+    const cacheKey = "/categories";
+    const cached = clientCache.get(cacheKey, 30 * 60 * 1000); // 30 minutes
+
+    if (!forceRefresh && cached) {
+      return { data: cached.data, fromCache: true };
+    }
+
+    const res = await api.get("/categories");
+    clientCache.set(cacheKey, res.data);
+    return res;
+  },
 };
 
 // ─── Cart Endpoints ───────────────────────────────────────────────────────────
@@ -130,5 +177,6 @@ export const userApi = {
 };
 
 export { getProductImageUrl } from "../util/imageUrl";
+export { clientCache } from "./cache";
 
 export default api;

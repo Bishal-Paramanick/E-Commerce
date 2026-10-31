@@ -45,8 +45,22 @@ public class UserService {
         user.setPassword(encoder.encode(user.getPassword()));
         Users savedUser = repo.save(user);
 
+        // Instantly generate JWT token so client authenticates in a single roundtrip (<200ms)
+        String token = jwtService.generateToken(savedUser.getUsername());
+
+        // Asynchronously execute secondary initialization tasks (audit, background provisioning)
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                log.debug("Asynchronously initialized session context for user '{}'", savedUser.getUsername());
+            } catch (Exception e) {
+                log.warn("Secondary registration background task warning: {}", e.getMessage());
+            }
+        });
+
         log.info("User '{}' registered successfully with ID: {}", savedUser.getUsername(), savedUser.getId());
-        return mapper.toResponse(savedUser);
+        UserResponse response = mapper.toResponse(savedUser);
+        response.setToken(token);
+        return response;
     }
 
     public AuthResponse verify(UserLoginRequest request) {

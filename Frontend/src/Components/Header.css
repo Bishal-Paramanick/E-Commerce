@@ -267,10 +267,58 @@
 }
 
 @media (max-width: 700px) {
+  .header {
+    padding: 0 12px;
+    height: 62px;
+  }
+  .header .BishalSection {
+    font-size: 17px;
+    letter-spacing: -0.2px;
+  }
+  .header .middle-section {
+    margin: 0 8px;
+  }
+  .header .search-bar {
+    height: 40px;
+    font-size: 13px;
+    padding: 0 12px;
+  }
+  .header .search-button {
+    width: 44px;
+    height: 40px;
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .header .right-section {
+    gap: 6px;
+  }
   .header .nav-text { display: none; }
   .header .orders-text { display: none; }
   .header-logout-btn { display: none; }
-  .header-signin-btn { padding: 6px 14px; font-size: 12px; }
+  .header-signin-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .header .header-link {
+    min-height: 44px;
+    min-width: 44px;
+    justify-content: center;
+    padding: 6px 8px;
+  }
+  .header .orders-btn {
+    min-height: 44px;
+    min-width: 44px;
+    justify-content: center;
+  }
+  .header .cart-link {
+    min-height: 44px;
+    min-width: 44px;
+    justify-content: center;
+  }
 }
 
 /* ── Sign Out Page Transition ──────────────────────────────────────────────── */

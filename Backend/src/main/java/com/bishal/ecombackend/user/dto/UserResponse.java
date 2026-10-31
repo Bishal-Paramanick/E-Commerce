@@ -4,6 +4,7 @@ public class UserResponse {
     private Long id;
     private String username;
     private String role;
+    private String token;
 
     public UserResponse() {}
 
@@ -11,6 +12,13 @@ public class UserResponse {
         this.id = id;
         this.username = username;
         this.role = role;
+    }
+
+    public UserResponse(Long id, String username, String role, String token) {
+        this.id = id;
+        this.username = username;
+        this.role = role;
+        this.token = token;
     }
 
     public Long getId() { return id; }
@@ -21,4 +29,7 @@ public class UserResponse {
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+
+    public String getToken() { return token; }
+    public void setToken(String token) { this.token = token; }
 }
