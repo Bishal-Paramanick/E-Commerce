@@ -23,31 +23,65 @@ function SkeletonCard() {
 }
 
 // ── Star Rating ───────────────────────────────────────────────────────────────
-function StarRating({ value = 0 }) {
-  const stars = Math.round(value * 2) / 2;
+export function StarRating({ rating, count, value, product }) {
+  // Extract rating value safely across all API formats (nested object, direct property, string, etc.)
+  const rawRating =
+    rating ??
+    (product ? (product.rating?.stars ?? product.stars ?? product.ratingStars ?? product.rating) : undefined) ??
+    (typeof value === "object" && value !== null ? (value.stars ?? value.rating) : value) ??
+    0;
+
+  const numericRating =
+    typeof rawRating === "number" && !isNaN(rawRating)
+      ? rawRating
+      : typeof rawRating === "string" && !isNaN(parseFloat(rawRating))
+      ? parseFloat(rawRating)
+      : 0;
+
+  // Extract review count safely across all API formats
+  const rawCount =
+    count ??
+    (product ? (product.rating?.count ?? product.count ?? product.ratingCount) : undefined) ??
+    (typeof value === "object" && value !== null ? value.count : undefined) ??
+    0;
+
+  const reviewCount =
+    typeof rawCount === "number" && !isNaN(rawCount)
+      ? rawCount
+      : typeof rawCount === "string" && !isNaN(parseInt(rawCount, 10))
+      ? parseInt(rawCount, 10)
+      : 0;
+
+  // Round rating to nearest half star
+  const roundedStars = Math.round(numericRating * 2) / 2;
+
   return (
-    <div className="star-rating" aria-label={`${value} out of 5 stars`}>
-      {[1, 2, 3, 4, 5].map((s) => (
-        <span
-          key={s}
-          className={
-            s <= Math.floor(stars)
-              ? "star full"
-              : s - 0.5 === stars
-              ? "star half"
-              : "star empty"
+    <div
+      className="star-rating"
+      aria-label={`${numericRating.toFixed(1)} out of 5 stars (${reviewCount} customer reviews)`}
+    >
+      <div className="stars-group">
+        {[1, 2, 3, 4, 5].map((s) => {
+          let starClass = "star empty";
+          if (s <= Math.floor(roundedStars)) {
+            starClass = "star full";
+          } else if (s - 0.5 === roundedStars) {
+            starClass = "star half";
           }
-        >
-          ★
-        </span>
-      ))}
-      <span className="rating-value">{value > 0 ? value.toFixed(1) : ""}</span>
+          return (
+            <span key={s} className={starClass}>
+              ★
+            </span>
+          );
+        })}
+      </div>
+      <span className="review-count">({reviewCount})</span>
     </div>
   );
 }
 
 // ── Product Card ──────────────────────────────────────────────────────────────
-function ProductCard({ product, onAddToCart, onOpenModal }) {
+export function ProductCard({ product, onAddToCart, onOpenModal }) {
   const { user, token } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -118,7 +152,11 @@ function ProductCard({ product, onAddToCart, onOpenModal }) {
         {product.name}
       </div>
 
-      <StarRating value={product.rating ?? 0} />
+      {/* Product Rating & Review Count */}
+      <StarRating
+        rating={product.rating?.stars ?? product.stars ?? product.ratingStars ?? product.rating}
+        count={product.rating?.count ?? product.count ?? product.ratingCount ?? 0}
+      />
 
       <div className="product-price">{formatMoney(product.priceCents || 0)}</div>
 

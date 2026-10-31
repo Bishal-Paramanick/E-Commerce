@@ -495,22 +495,55 @@
 .star-rating {
   display: flex;
   align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.stars-group {
+  display: inline-flex;
+  align-items: center;
   gap: 2px;
 }
 
 .star {
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1;
+  display: inline-block;
+  user-select: none;
 }
 
-.star.full  { color: #f59e0b; }
-.star.half  { color: #f59e0b; opacity: 0.7; }
-.star.empty { color: #cbd5e1; }
+/* Golden filled/active stars */
+.star.full,
+.star.filled,
+.star.active {
+  color: #f59e0b;
+}
+
+/* Fractional / half star */
+.star.half {
+  color: #f59e0b;
+  opacity: 0.75;
+}
+
+/* Subtle muted / gray unfilled stars */
+.star.empty,
+.star.inactive {
+  color: #cbd5e1;
+}
+
+/* Review count immediately to the right */
+.review-count,
+.rating-count {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+  line-height: 1;
+}
 
 .rating-value {
   font-size: 12px;
   color: var(--text-muted);
-  margin-left: 4px;
+  margin-left: 2px;
   font-weight: 500;
 }
 

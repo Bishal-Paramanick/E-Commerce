@@ -60,14 +60,35 @@ export function Product({ product, loadCart }) {
       <div className="product-name limit-text-to-2-lines">{product.name}</div>
 
       <div className="product-rating-container">
-        <img
-          className="product-rating-stars"
-          src={`/images/ratings/rating-${Math.round((product.ratingStars || (product.rating?.stars || 0)) * 10)}.png`}
-          alt="rating"
-        />
-        <div className="product-rating-count link-primary">
-          {product.ratingCount || product.rating?.count || 0}
+        <div className="stars-group">
+          {[1, 2, 3, 4, 5].map((s) => {
+            const rawRating =
+              product.rating?.stars ??
+              product.stars ??
+              product.ratingStars ??
+              (typeof product.rating === "number" ? product.rating : 0);
+            const numericRating =
+              typeof rawRating === "number" && !isNaN(rawRating)
+                ? rawRating
+                : parseFloat(rawRating) || 0;
+            const roundedStars = Math.round(numericRating * 2) / 2;
+
+            let starClass = "star empty";
+            if (s <= Math.floor(roundedStars)) {
+              starClass = "star full";
+            } else if (s - 0.5 === roundedStars) {
+              starClass = "star half";
+            }
+            return (
+              <span key={s} className={starClass}>
+                ★
+              </span>
+            );
+          })}
         </div>
+        <span className="review-count">
+          ({product.rating?.count ?? product.count ?? product.ratingCount ?? 0})
+        </span>
       </div>
 
       <div className="product-price">{formatMoney(product.priceCents || 0)}</div>
