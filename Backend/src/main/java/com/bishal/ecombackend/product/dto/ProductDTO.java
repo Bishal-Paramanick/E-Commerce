@@ -1,6 +1,7 @@
 package com.bishal.ecombackend.product.dto;
 
 import com.bishal.ecombackend.product.model.Rating;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,4 +24,14 @@ public class ProductDTO {
     private Integer stockQuantity;
     private Long categoryId;
     private String categoryName;
+
+    @JsonProperty("inStock")
+    public boolean isInStock() {
+        return stockQuantity != null && stockQuantity > 0;
+    }
+
+    @JsonProperty("stock")
+    public Integer getStock() {
+        return stockQuantity;
+    }
 }

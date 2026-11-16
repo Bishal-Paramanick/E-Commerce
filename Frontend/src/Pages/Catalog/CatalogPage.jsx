@@ -105,9 +105,19 @@ export function ProductCard({ product, onAddToCart, onOpenModal, priority = fals
     return () => clearTimeout(addedTimerRef.current);
   }, []);
 
-  const stock = product.stockQuantity ?? 1;
-  const inStock = stock > 0;
-  const maxQty = Math.max(1, Math.min(MAX_QTY_PER_ORDER, stock));
+  const stock =
+    typeof product.stockQuantity === "number"
+      ? product.stockQuantity
+      : typeof product.stock === "number"
+      ? product.stock
+      : typeof product.quantity === "number"
+      ? product.quantity
+      : product.inStock !== undefined
+      ? (product.inStock ? 50 : 0)
+      : 50;
+
+  const inStock = product.inStock !== undefined ? Boolean(product.inStock) : stock > 0;
+  const maxQty = Math.max(1, Math.min(MAX_QTY_PER_ORDER, stock > 0 ? stock : 1));
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {

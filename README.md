@@ -5,7 +5,7 @@
 [![React](https://img.shields.io/badge/React-19.2.6-blue.svg?style=flat-square&logo=react)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-8.0.12-646CFF.svg?style=flat-square&logo=vite)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-v4.3.3-38B2AC.svg?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
-[![MySQL](https://img.shields.io/badge/MySQL-8.0.46-4479A1.svg?style=flat-square&logo=mysql)](https://www.mysql.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1.svg?style=flat-square&logo=postgresql)](https://www.postgresql.org/)
 [![Razorpay](https://img.shields.io/badge/Razorpay-1.4.8-0C2340.svg?style=flat-square&logo=razorpay)](https://razorpay.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
@@ -42,7 +42,7 @@ The system targets modern, latency-sensitive digital commerce requirements by de
          ├──► [ Spring Data JPA / Hibernate ORM ]
          │            │
          │            ▼
-         ├──► [ Primary MySQL 8.0.46 Database Cluster ]
+         ├──► [ Primary PostgreSQL 16 Database Cluster (Aiven / Local) ]
          │
          └──► [ Razorpay Payment Cloud Gateway ]
 ```
@@ -53,7 +53,7 @@ The system targets modern, latency-sensitive digital commerce requirements by de
 - **Dual-Path Payment Reconciliation**: Supports synchronous browser callbacks verified through the official Razorpay SDK, backed by an asynchronous, idempotent server-to-server webhook processor verified using **HMAC-SHA256** constant-time digest comparisons (`MessageDigest.isEqual`).
 - **Dynamic Search & Inverted Keyword Joins**: The product query engine leverages type-safe **Spring Data JPA Criteria Specifications** with left-outer joins over collection tables (`product_keywords`), enabling search across names, brands, and metadata tags with distinct result sets.
 - **Automated Lifecycle Seeding & Reset Engine**: Features an administrative reset controller protected by `X-Admin-Reset-Key` and `ROLE_ADMIN` permissions that idempotently purges transactional records (carts, orders, addresses) while preserving baseline identity ledgers.
-- **Containerized Multi-Tier Topology**: Production-ready `docker-compose.yaml` orchestrating isolated bridge networks, health-checked MySQL containers, volume mount persistency, and resource limits (CPUs & memory ceilings).
+- **Containerized Multi-Tier Topology**: Production-ready `docker-compose.yaml` orchestrating isolated bridge networks, health-checked PostgreSQL containers, volume mount persistency, and resource limits (CPUs & memory ceilings).
 
 ---
 
@@ -88,7 +88,7 @@ BISHAL-MART resolves these failure modes through rigorous engineering practices:
 - **ACID Transaction Boundaries**: Every order checkout executes inside a `@Transactional` boundary that runs `validateStockAvailability()` and `deductStock()` synchronously before issuing the gateway payment order ID.
 - **Idempotent Dual-Track Webhooks**: The webhook processor listens for `order.paid`, `payment.captured`, and `payment.failed`. It verifies signatures using constant-time byte comparisons, updates order statuses idempotently, and restores inventory immediately on transaction failure.
 - **Decoupled Reactive State Bus**: React 19 handles routing and authorization state through a unified `AuthContext` with custom DOM events (`auth:logout`, `auth:forbidden`), ensuring immediate session termination across detached components without stale token loops.
-- **JPA Criteria Specification Filtering**: Dynamic multi-faceted filtering is translated into a single optimized SQL statement executed directly on the MySQL engine, utilizing database-level pagination (`Pageable`).
+- **JPA Criteria Specification Filtering**: Dynamic multi-faceted filtering is translated into a single optimized SQL statement executed directly on the PostgreSQL engine, utilizing database-level pagination (`Pageable`).
 - **Idempotent Administrative Reset Engine**: The `DatabaseResetService` clears transactional tables (orders, cart items, customer addresses) while automatically reseeding base accounts (`bishal`, `admin`) and baseline product catalog inventory (50 units per SKU).
 
 ---
@@ -156,17 +156,17 @@ BISHAL-MART resolves these failure modes through rigorous engineering practices:
 │  │                     SPRING DATA JPA REPOSITORIES                        │  │
 │  │  ProductRepo  |  OrderRepo  |  CartRepo  |  UserRepo  |  AddressRepo    │  │
 │  └────────────────────────────────────┬────────────────────────────────────┘  │
-│                                       │ Hibernate ORM (Dialect: MySQL8)       │
+│                                       │ Hibernate ORM (Dialect: PostgreSQL)   │
 └───────────────────────────────────────┼───────────────────────────────────────┘
                                         │
               ┌─────────────────────────┴─────────────────────────┐
               │                                                   │
               ▼                                                   ▼
 ┌───────────────────────────┐                       ┌───────────────────────────┐
-│     MySQL 8.0.46 CLUSTER   │                       │   RAZORPAY PAYMENT CLOUD  │
-│  (ecommerce_db Container) │                       │  - Orders API Endpoint    │
+│   PostgreSQL 16 CLUSTER   │                       │   RAZORPAY PAYMENT CLOUD  │
+│(ecommerce-postgres/Aiven) │                       │  - Orders API Endpoint    │
 │  - Persistent Volume Mount│                       │  - Checkout JS SDK Modal  │
-│  - InnoDB Relational Tables│                       │  - Webhook Dispatcher     │
+│  - Relational Schema Tables│                       │  - Webhook Dispatcher     │
 └───────────────────────────┘                       └───────────────────────────┘
 ```
 
@@ -231,7 +231,7 @@ The frontend application provides a cohesive, responsive commerce console config
 
 ## 6. Data Schema & Knowledge Model
 
-The persistence layer is mapped to MySQL using Spring Data JPA. Below is the relational model schema:
+The persistence layer is mapped to PostgreSQL using Spring Data JPA. Below is the relational model schema:
 
 ```
                             RELATIONAL SCHEMA TOPOLOGY
@@ -240,7 +240,7 @@ The persistence layer is mapped to MySQL using Spring Data JPA. Below is the rel
  ┌────────────────────────┐              ┌────────────────────────┐
  │        users           │              │     user_addresses     │
  ├────────────────────────┤              ├────────────────────────┤
- │ PK  id (BIGINT AUTO)   │1            *│ PK  id (BINARY(16) UUID│
+ │ PK  id (BIGINT AUTO)   │1            *│ PK  id (UUID)          │
  │     username (VARCHAR) │◄─────────────┤ FK  user_id (BIGINT)   │
  │     email (VARCHAR)    │              │     full_name (VARCHAR)│
  │     password (VARCHAR) │              │     street_address(VAR)│
@@ -253,7 +253,7 @@ The persistence layer is mapped to MySQL using Spring Data JPA. Below is the rel
  ┌───────────▼────────────┐              ┌────────────────────────┐
  │        carts           │              │       cart_items       │
  ├────────────────────────┤              ├────────────────────────┤
- │ PK  id (BIGINT AUTO)   │1            *│ PK  id (BINARY(16) UUID│
+ │ PK  id (BIGINT AUTO)   │1            *│ PK  id (UUID)          │
  │ FK  user_id (BIGINT)   │◄─────────────┤ FK  cart_id (BIGINT)   │
  └────────────────────────┘              │ FK  product_id (UUID)  │
                                          │     quantity (INT)     │
@@ -272,7 +272,7 @@ The persistence layer is mapped to MySQL using Spring Data JPA. Below is the rel
  ┌───────────▼────────────┐              ┌────────────────────────┐
  │        products        │              │    product_keywords    │
  ├────────────────────────┤              ├────────────────────────┤
- │ PK  id (BINARY(16) UUID│1            *│ FK  product_id (UUID)  │
+ │ PK  id (UUID)          │1            *│ FK  product_id (UUID)  │
  │     name (VARCHAR)     │◄─────────────┤     keyword (VARCHAR)  │
  │     price_cents (INT)  │              └────────────────────────┘
  │     stock_quantity(INT)│
@@ -287,7 +287,7 @@ The persistence layer is mapped to MySQL using Spring Data JPA. Below is the rel
  ┌───────────▼────────────┐              ┌────────────────────────┐
  │         orders         │              │     order_products     │
  ├────────────────────────┤              ├────────────────────────┤
- │ PK  id (BINARY(16) UUID│1            *│ FK  order_id (UUID)    │
+ │ PK  id (UUID)          │1            *│ FK  order_id (UUID)    │
  │ FK  user_id (BIGINT)   │◄─────────────┤     product_id (UUID)  │
  │     status (VARCHAR)   │              │     quantity (INT)     │
  │     total_cost_cents   │              │     unit_price_cents   │
@@ -537,7 +537,7 @@ E-Commerce/
 - **Java Development Kit (JDK)**: Version 25 installed (`java -version`).
 - **Node.js**: Version 20.x or higher (`node -v`).
 - **Package Manager**: `npm` (v10+) or `pnpm`.
-- **Database Engine**: MySQL Server 8.0.x running locally on port 3306 or via Docker.
+- **Database Engine**: PostgreSQL 16+ running locally on port 5432, via Docker (`postgres:16-alpine`), or cloud-hosted on Aiven PostgreSQL.
 - **Razorpay Account**: Valid Test Key ID and Secret for payment modal verification.
 
 ---
@@ -549,17 +549,30 @@ Create a `.env` file inside the `Backend/` directory based on `.env.example`:
 ```properties
 # Backend/.env
 PORT=8080
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=ecommerce_db
-DB_USERNAME=root
-DB_PASSWORD=your_mysql_password
-DB_ROOT_PASSWORD=your_root_password
 
+# PostgreSQL Database Connection (Local or Aiven Cloud)
+# Driver: org.postgresql.Driver
+# Connection URL template: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=require
+# For Local PostgreSQL:
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=defaultdb
+DB_USERNAME=postgres
+DB_PASSWORD=your_postgres_password
+
+# For Aiven Cloud PostgreSQL:
+# DB_HOST=pg-xxxxxx-your-account.aivencloud.com
+# DB_PORT=16484
+# DB_NAME=defaultdb
+# DB_USERNAME=avnadmin
+# DB_PASSWORD=your_aiven_password
+
+# Payment Gateway (Razorpay)
 RAZORPAY_KEY_ID=rzp_test_YourTestKeyIdHere
 RAZORPAY_KEY_SECRET=YourRazorpaySecretKeyHere
 RAZORPAY_WEBHOOK_SECRET=YourWebhookSecretHere
 
+# Security & Administration
 JWT_SECRET=super_secret_signing_key_at_least_256_bits_long_abcdef123456
 ADMIN_RESET_KEY=admin123
 ```
@@ -620,7 +633,7 @@ docker compose up -d --build
 ```
 This provisions:
 - An isolated `ecom-network` bridge.
-- A healthy `mysql:8.0.46` container with persistent storage mapped to `mysql_data`.
+- A healthy `postgres:16-alpine` container with persistent storage mapped to `postgres_data`.
 - The Spring Boot application running inside container `ecom-backend`, with automatic health-check waiting.
 
 ---

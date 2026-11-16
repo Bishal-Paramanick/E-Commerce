@@ -7,7 +7,7 @@ A production-ready e-commerce single-page application built with **React 19**, *
 ## 🛠️ Architecture & Tech Stack
 
 * **Frontend:** React 19, Vite, React Router v7, Day.js, Pure CSS Custom Design System.
-* **Backend:** Spring Boot (RESTful API), Hibernate / Spring Data JPA, MySQL.
+* **Backend:** Spring Boot (RESTful API), Hibernate / Spring Data JPA, PostgreSQL.
 * **API Modules:**
   * Catalog discovery & keyword search (`GET /api/products`)
   * Dynamic multi-option checkout calculations (`GET /api/delivery-options`)

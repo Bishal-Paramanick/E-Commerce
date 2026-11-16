@@ -47,7 +47,7 @@ public class Product extends BaseAuditableEntity implements Persistable<UUID> {
     private String brand;
 
     @Column(nullable = false)
-    private Integer stockQuantity = 0;
+    private Integer stockQuantity = 50;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "category_id")

@@ -37,6 +37,11 @@ public class DatabaseSeeder implements CommandLineRunner {
         if (productRepository.count() == 0) {
             InputStream inputStream = new ClassPathResource("data/products.json").getInputStream();
             List<Product> products = objectMapper.readValue(inputStream, new TypeReference<>() {});
+            for (Product p : products) {
+                if (p.getStockQuantity() == null || p.getStockQuantity() == 0) {
+                    p.setStockQuantity(50);
+                }
+            }
             productRepository.saveAll(products);
         }
     }
