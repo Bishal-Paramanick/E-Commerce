@@ -23,7 +23,6 @@ public class CartItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "BINARY(16)")
     private UUID id;
 
     // Connects this item to the authenticated user's cart

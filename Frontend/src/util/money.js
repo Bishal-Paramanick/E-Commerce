@@ -1,15 +1,19 @@
 import dayjs from "dayjs";
 
-export function formatMoney(amountCents) {
-  // Multiply dollar value by 92 for INR conversion
-  const rupees = (Number(amountCents || 0) / 100) * 52;
+// Single source of truth for currency conversion (USD → INR).
+// Import this wherever you display a converted price (e.g. the catalog price slider).
+export const USD_TO_INR_RATE = 5.2;
 
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 2,
-  }).format(rupees/10);
+const inrFormatter = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 2,
+  minimumFractionDigits: 2,
+});
+
+export function formatMoney(amountCents) {
+  const dollars = Number(amountCents || 0) / 100;
+  return inrFormatter.format(dollars * USD_TO_INR_RATE);
 }
 
 export function deliveryPercentage({ item, order }) {
@@ -28,14 +32,8 @@ export function deliveryPercentage({ item, order }) {
     return 100;
   }
 
-  let deliveryPercent = (timePassedMs / totalDeliveryTimeMs) * 100;
+  const deliveryPercent = (timePassedMs / totalDeliveryTimeMs) * 100;
 
-  // Set a minimum visible width of 10% for newly placed orders
-  if (deliveryPercent < 10) {
-    deliveryPercent = 10;
-  } else if (deliveryPercent > 100) {
-    deliveryPercent = 100;
-  }
-
-  return Math.round(deliveryPercent);
+  // Clamp between 10% (minimum visible width for new orders) and 100%
+  return Math.round(Math.min(100, Math.max(10, deliveryPercent)));
 }

@@ -1,18 +1,16 @@
 services:
-  mysqldb:
-    image: mysql:8.0.46
-    container_name: ecommerce-mysql
+  postgresdb:
+    image: postgres:16-alpine
+    container_name: ecommerce-postgres
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: ecommerce_db
-      MYSQL_USER: ${DB_USERNAME}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: defaultdb
+      POSTGRES_USER: ${DB_USERNAME:-avnadmin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
     ports:
-      - "3308:3306"
+      - "5432:5432"
     volumes:
-      - mysql_data:/var/lib/mysql
-      # Seed scripts (run automatically on first container init)
+      - postgres_data:/var/lib/postgresql/data
       - ./init-db:/docker-entrypoint-initdb.d:ro
     networks:
       - ecom-network
@@ -24,11 +22,11 @@ services:
         reservations:
           memory: 512M
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-avnadmin} -d defaultdb"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 40s
+      start_period: 20s
 
   backend:
     build:
@@ -39,18 +37,22 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysqldb:3306/ecommerce_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresdb:5432/defaultdb
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-avnadmin}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-secret}
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      DB_HOST: postgresdb
+      DB_PORT: 5432
+      DB_NAME: defaultdb
+      DB_USERNAME: ${DB_USERNAME:-avnadmin}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
       RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID}
       RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET}
       RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET}
       ADMIN_RESET_KEY: ${ADMIN_RESET_KEY}
       JWT_SECRET: ${JWT_SECRET}
     depends_on:
-      mysqldb:
+      postgresdb:
         condition: service_healthy
     networks:
       - ecom-network
@@ -69,7 +71,7 @@ networks:
     driver: bridge
 
 volumes:
-  mysql_data:
+  postgres_data:
     driver: local
   app_logs:
     driver: local

@@ -1,9 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { extractErrorMessage } from "../../services/api";
 import { toast } from "../../util/toast";
 import "./AuthPage.css";
+
+// ── Constants ───────────────────────────────────────────────────────────────
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_USERNAME_LEN = 3;
+const MIN_PASSWORD_LEN = 6;
+const REDIRECT_DELAY_MS = 900;
+
+// NOTE: the backend MUST ignore `role` on public registration (always ROLE_USER),
+// otherwise anyone can register as an admin. Seller/admin access should come from
+// an invite or approval flow. Remove ROLE_ADMIN from this list once that exists.
+const ROLE_OPTIONS = [
+  { value: "ROLE_USER", emoji: "🛍️", label: "Customer (Buyer)" },
+  { value: "ROLE_ADMIN", emoji: "⚡", label: "Admin / Seller" },
+];
+
+const EMPTY_FORM = { username: "", password: "", email: "" };
+const EMPTY_TOUCHED = { username: false, password: false, email: false };
 
 // ── Icons ───────────────────────────────────────────────────────────────────
 function UserIcon() {
@@ -66,27 +83,50 @@ function AlertCircleIcon() {
 export function AuthPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { login, register } = useAuth();
+  const { login, register, isAuthenticated } = useAuth();
 
-  const [mode, setMode] = useState(() =>
-    location.pathname === "/register" ? "register" : "login"
-  );
-  const [form, setForm] = useState({ username: "", password: "", email: "" });
+  // Derived from the URL so header links to /login or /register switch the form
+  const mode = location.pathname === "/register" ? "register" : "login";
+  const isRegister = mode === "register";
+  const redirectTarget = location.state?.from || "/";
+
+  const [form, setForm] = useState(EMPTY_FORM);
   const [role, setRole] = useState("ROLE_USER");
-  const [touched, setTouched] = useState({ username: false, password: false, email: false });
+  const [touched, setTouched] = useState(EMPTY_TOUCHED);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [successState, setSuccessState] = useState(false);
   const [errorBanner, setErrorBanner] = useState(null);
 
+  const redirectTimerRef = useRef(null);
+  const submittedRef = useRef(false); // lets the success animation finish before redirecting
+
+  // Clear pending redirect on unmount
+  useEffect(() => {
+    return () => clearTimeout(redirectTimerRef.current);
+  }, []);
+
+  // Already signed in (e.g. visited /login directly): skip the form
+  useEffect(() => {
+    if (isAuthenticated && !submittedRef.current) {
+      navigate(redirectTarget, { replace: true });
+    }
+  }, [isAuthenticated, navigate, redirectTarget]);
+
+  // Reset the form whenever the mode changes
+  useEffect(() => {
+    setErrorBanner(null);
+    setForm(EMPTY_FORM);
+    setRole("ROLE_USER");
+    setTouched(EMPTY_TOUCHED);
+  }, [mode]);
+
   const switchMode = (newMode) => {
     if (loading || successState) return;
-    setMode(newMode);
-    setErrorBanner(null);
-    setForm({ username: "", password: "", email: "" });
-    setRole("ROLE_USER");
-    setTouched({ username: false, password: false, email: false });
-    navigate(newMode === "register" ? "/register" : "/login", { replace: true, state: location.state });
+    navigate(newMode === "register" ? "/register" : "/login", {
+      replace: true,
+      state: location.state,
+    });
   };
 
   const handleChange = (e) => {
@@ -99,19 +139,23 @@ export function AuthPage() {
     setTouched((prev) => ({ ...prev, [field]: true }));
   };
 
-  // Client-side inline validation helpers
+  // Inline validation (length rules only apply when registering, so existing
+  // users with older credentials can still sign in; the server judges logins)
+  const trimmedUsername = form.username.trim();
+  const trimmedEmail = form.email.trim();
+
   const usernameError =
-    touched.username && form.username.trim().length > 0 && form.username.trim().length < 3
-      ? "Username must be at least 3 characters"
+    isRegister && touched.username && trimmedUsername.length > 0 && trimmedUsername.length < MIN_USERNAME_LEN
+      ? `Username must be at least ${MIN_USERNAME_LEN} characters`
       : null;
 
   const passwordError =
-    touched.password && form.password.length > 0 && form.password.length < 6
-      ? "Password must be at least 6 characters"
+    isRegister && touched.password && form.password.length > 0 && form.password.length < MIN_PASSWORD_LEN
+      ? `Password must be at least ${MIN_PASSWORD_LEN} characters`
       : null;
 
   const emailError =
-    mode === "register" && touched.email && form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
+    isRegister && touched.email && trimmedEmail && !EMAIL_RE.test(trimmedEmail)
       ? "Please enter a valid email address"
       : null;
 
@@ -121,53 +165,77 @@ export function AuthPage() {
 
     setTouched({ username: true, password: true, email: true });
 
-    if (form.username.trim().length < 3) {
-      setErrorBanner("Username must be at least 3 characters long.");
+    if (!trimmedUsername || !form.password) {
+      setErrorBanner("Please enter your username and password.");
       return;
     }
-    if (form.password.length < 6) {
-      setErrorBanner("Password must be at least 6 characters long.");
-      return;
+
+    if (isRegister) {
+      if (trimmedUsername.length < MIN_USERNAME_LEN) {
+        setErrorBanner(`Username must be at least ${MIN_USERNAME_LEN} characters long.`);
+        return;
+      }
+      if (form.password.length < MIN_PASSWORD_LEN) {
+        setErrorBanner(`Password must be at least ${MIN_PASSWORD_LEN} characters long.`);
+        return;
+      }
+      if (trimmedEmail && !EMAIL_RE.test(trimmedEmail)) {
+        setErrorBanner("Please enter a valid email address.");
+        return;
+      }
     }
 
     setLoading(true);
     setErrorBanner(null);
+    submittedRef.current = true;
 
     try {
-      if (mode === "login") {
-        await login({ username: form.username.trim(), password: form.password });
-        setSuccessState(true);
-        toast.success(`Welcome back, ${form.username.trim()}!`, { duration: 2500 });
-      } else {
+      if (isRegister) {
         await register({
-          username: form.username.trim(),
+          username: trimmedUsername,
           password: form.password,
-          email: form.email.trim() || undefined,
-          role: role,
+          email: trimmedEmail || undefined,
+          role,
         });
-        setSuccessState(true);
         toast.success("Account created successfully! Welcome aboard.", { duration: 2500 });
+      } else {
+        await login({ username: trimmedUsername, password: form.password });
+        toast.success(`Welcome back, ${trimmedUsername}!`, { duration: 2500 });
       }
 
-      const handleLoginSuccess = () => {
-        // Redirect back to intended target, or fallback to home
-        const targetPath = location.state?.from || "/";
-        navigate(targetPath, { replace: true });
-      };
+      setSuccessState(true);
+      setLoading(false);
 
-      // Smooth 900ms delay for user to perceive the success indicator before redirect
-      setTimeout(handleLoginSuccess, 900);
+      // Short delay so the user sees the success indicator before redirect
+      redirectTimerRef.current = setTimeout(() => {
+        navigate(redirectTarget, { replace: true });
+      }, REDIRECT_DELAY_MS);
     } catch (err) {
-      const msg = extractErrorMessage(err);
+      submittedRef.current = false;
+      const msg = extractErrorMessage(err) || "Something went wrong. Please try again.";
       setErrorBanner(msg);
       toast.error(msg);
       setLoading(false);
     }
   };
 
+  const busy = loading || successState;
+  const inputBase =
+    "auth-input w-full bg-slate-50/80 border text-slate-800 placeholder-slate-400 rounded-xl pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:border-transparent transition-all shadow-sm";
+  const inputBorder = (hasError) =>
+    hasError ? "border-rose-400 ring-1 ring-rose-400" : "border-slate-200";
+  const labelClass =
+    "auth-label text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 block";
+  const iconWrapClass =
+    "absolute left-[11px] top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none flex items-center justify-center";
+
   return (
     <div className="auth-page min-h-screen bg-gradient-to-br from-slate-100 via-indigo-50/40 to-slate-200 flex items-center justify-center p-4">
-      <div className={`auth-card bg-white/95 backdrop-blur-md rounded-3xl shadow-[0_20px_50px_rgba(79,70,229,0.12)] border border-slate-200/80 p-8 sm:p-10 max-w-md w-full relative transition-all${successState ? " auth-success-exit" : ""}`}>
+      <div
+        className={`auth-card bg-white/95 backdrop-blur-md rounded-3xl shadow-[0_20px_50px_rgba(79,70,229,0.12)] border border-slate-200/80 p-8 sm:p-10 max-w-md w-full relative transition-all${
+          successState ? " auth-success-exit" : ""
+        }`}
+      >
         {/* Branding */}
         <Link to="/" className="auth-logo block text-center mb-1" aria-label="BISHAL-MART Home">
           <span className="auth-logo-text bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent font-black text-2xl tracking-wider text-center block mb-1">
@@ -175,17 +243,20 @@ export function AuthPage() {
           </span>
         </Link>
         <h1 className="auth-title text-xl sm:text-2xl font-bold text-slate-900 text-center mb-1">
-          {mode === "login" ? "Sign In" : "Create Account"}
+          {isRegister ? "Create Account" : "Sign In"}
         </h1>
         <p className="auth-subtitle text-slate-500 text-sm text-center mb-8">
-          {mode === "login"
-            ? "Enter your credentials to access your account."
-            : "Join BISHAL-MART today and enjoy seamless shopping."}
+          {isRegister
+            ? "Join BISHAL-MART today and enjoy seamless shopping."
+            : "Enter your credentials to access your account."}
         </p>
 
         {/* Error Banner */}
         {errorBanner && (
-          <div className="auth-error-banner flex items-center gap-2.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold rounded-xl p-3 mb-6" role="alert">
+          <div
+            className="auth-error-banner flex items-center gap-2.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold rounded-xl p-3 mb-6"
+            role="alert"
+          >
             <AlertCircleIcon />
             <span>{errorBanner}</span>
           </div>
@@ -195,11 +266,11 @@ export function AuthPage() {
         <form className="auth-form flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
           {/* Username */}
           <div className="auth-field">
-            <label className="auth-label text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 block" htmlFor="auth-username">
+            <label className={labelClass} htmlFor="auth-username">
               Username
             </label>
             <div className="auth-input-wrapper relative flex items-center">
-              <span className="absolute left-[11px] top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none flex items-center justify-center">
+              <span className={iconWrapClass}>
                 <UserIcon />
               </span>
               <input
@@ -209,13 +280,12 @@ export function AuthPage() {
                 autoComplete="username"
                 required
                 placeholder="Enter your username"
-                className={`auth-input w-full bg-slate-50/80 border ${
-                  usernameError ? "border-rose-400 ring-1 ring-rose-400" : "border-slate-200"
-                } text-slate-800 placeholder-slate-400 rounded-xl pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:border-transparent transition-all shadow-sm`}
+                className={`${inputBase} ${inputBorder(usernameError)}`}
                 value={form.username}
                 onChange={handleChange}
                 onBlur={() => handleBlur("username")}
-                disabled={loading || successState}
+                disabled={busy}
+                aria-invalid={Boolean(usernameError)}
               />
             </div>
             {usernameError && (
@@ -224,13 +294,14 @@ export function AuthPage() {
           </div>
 
           {/* Email (Register mode) */}
-          {mode === "register" && (
+          {isRegister && (
             <div className="auth-field">
-              <label className="auth-label text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 block" htmlFor="auth-email">
-                Email address <span className="auth-optional normal-case font-normal text-slate-400">(optional)</span>
+              <label className={labelClass} htmlFor="auth-email">
+                Email address{" "}
+                <span className="auth-optional normal-case font-normal text-slate-400">(optional)</span>
               </label>
               <div className="auth-input-wrapper relative flex items-center">
-                <span className="absolute left-[11px] top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none flex items-center justify-center">
+                <span className={iconWrapClass}>
                   <MailIcon />
                 </span>
                 <input
@@ -239,13 +310,12 @@ export function AuthPage() {
                   type="email"
                   autoComplete="email"
                   placeholder="you@example.com"
-                  className={`auth-input w-full bg-slate-50/80 border ${
-                    emailError ? "border-rose-400 ring-1 ring-rose-400" : "border-slate-200"
-                  } text-slate-800 placeholder-slate-400 rounded-xl pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:border-transparent transition-all shadow-sm`}
+                  className={`${inputBase} ${inputBorder(emailError)}`}
                   value={form.email}
                   onChange={handleChange}
                   onBlur={() => handleBlur("email")}
-                  disabled={loading || successState}
+                  disabled={busy}
+                  aria-invalid={Boolean(emailError)}
                 />
               </div>
               {emailError && (
@@ -256,34 +326,33 @@ export function AuthPage() {
 
           {/* Password */}
           <div className="auth-field">
-            <label className="auth-label text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 block" htmlFor="auth-password">
+            <label className={labelClass} htmlFor="auth-password">
               Password
             </label>
             <div className="auth-input-wrapper relative flex items-center">
-              <span className="absolute left-[11px] top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none flex items-center justify-center">
+              <span className={iconWrapClass}>
                 <LockIcon />
               </span>
               <input
                 id="auth-password"
                 name="password"
                 type={showPassword ? "text" : "password"}
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
+                autoComplete={isRegister ? "new-password" : "current-password"}
                 required
                 placeholder="••••••••"
-                className={`auth-input w-full bg-slate-50/80 border ${
-                  passwordError ? "border-rose-400 ring-1 ring-rose-400" : "border-slate-200"
-                } text-slate-800 placeholder-slate-400 rounded-xl pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:border-transparent transition-all shadow-sm`}
+                className={`${inputBase} ${inputBorder(passwordError)}`}
                 value={form.password}
                 onChange={handleChange}
                 onBlur={() => handleBlur("password")}
-                disabled={loading || successState}
+                disabled={busy}
+                aria-invalid={Boolean(passwordError)}
               />
               <button
                 type="button"
                 className="auth-eye-btn absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-1.5 rounded-lg transition"
                 onClick={() => setShowPassword((prev) => !prev)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
-                tabIndex={-1}
+                aria-pressed={showPassword}
               >
                 {showPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
@@ -294,53 +363,40 @@ export function AuthPage() {
           </div>
 
           {/* Role Selection (Register mode) */}
-          {mode === "register" && (
-            <div className="auth-field">
-              <label className="auth-label text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 block">
+          {isRegister && (
+            <div className="auth-field" role="radiogroup" aria-labelledby="auth-role-label">
+              <span id="auth-role-label" className={labelClass}>
                 Register As
-              </label>
+              </span>
               <div className="auth-role-group grid grid-cols-2 gap-3 mt-1.5">
-                {/* Customer Option */}
-                <button
-                  type="button"
-                  onClick={() => setRole("ROLE_USER")}
-                  className={`auth-role-btn relative flex flex-col items-center justify-center py-3.5 px-3 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-200 ease-out active:scale-95 gap-1.5 border ${
-                    role === "ROLE_USER"
-                      ? "active bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 border-transparent ring-2 ring-indigo-600 ring-offset-2 scale-[1.02]"
-                      : "bg-slate-50 text-slate-600 border border-slate-200 hover:border-indigo-300 hover:bg-slate-100"
-                  }`}
-                >
-                  {role === "ROLE_USER" && (
-                    <span className="auth-role-badge absolute top-2 right-2 flex items-center justify-center w-4 h-4 rounded-full bg-white text-indigo-600 shadow-sm">
-                      <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    </span>
-                  )}
-                  <span className="text-xl">🛍️</span>
-                  <span className="font-bold tracking-tight">Customer (Buyer)</span>
-                </button>
-
-                {/* Admin Option */}
-                <button
-                  type="button"
-                  onClick={() => setRole("ROLE_ADMIN")}
-                  className={`auth-role-btn relative flex flex-col items-center justify-center py-3.5 px-3 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-200 ease-out active:scale-95 gap-1.5 border ${
-                    role === "ROLE_ADMIN"
-                      ? "active bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 border-transparent ring-2 ring-indigo-600 ring-offset-2 scale-[1.02]"
-                      : "bg-slate-50 text-slate-600 border border-slate-200 hover:border-indigo-300 hover:bg-slate-100"
-                  }`}
-                >
-                  {role === "ROLE_ADMIN" && (
-                    <span className="auth-role-badge absolute top-2 right-2 flex items-center justify-center w-4 h-4 rounded-full bg-white text-indigo-600 shadow-sm">
-                      <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    </span>
-                  )}
-                  <span className="text-xl">⚡</span>
-                  <span className="font-bold tracking-tight">Admin / Seller</span>
-                </button>
+                {ROLE_OPTIONS.map((opt) => {
+                  const selected = role === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => setRole(opt.value)}
+                      disabled={busy}
+                      className={`auth-role-btn relative flex flex-col items-center justify-center py-3.5 px-3 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-200 ease-out active:scale-95 gap-1.5 border ${
+                        selected
+                          ? "active bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 border-transparent ring-2 ring-indigo-600 ring-offset-2 scale-[1.02]"
+                          : "bg-slate-50 text-slate-600 border-slate-200 hover:border-indigo-300 hover:bg-slate-100"
+                      }`}
+                    >
+                      {selected && (
+                        <span className="auth-role-badge absolute top-2 right-2 flex items-center justify-center w-4 h-4 rounded-full bg-white text-indigo-600 shadow-sm">
+                          <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </span>
+                      )}
+                      <span className="text-xl" aria-hidden="true">{opt.emoji}</span>
+                      <span className="font-bold tracking-tight">{opt.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -348,58 +404,39 @@ export function AuthPage() {
           {/* Primary CTA Button */}
           <button
             type="submit"
-            className={`auth-submit-btn w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 transition-all duration-200 active:scale-[0.98] cursor-pointer mt-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2${loading ? " loading" : ""}${successState ? " success" : ""}`}
-            disabled={loading || successState}
+            className={`auth-submit-btn w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 transition-all duration-200 active:scale-[0.98] cursor-pointer mt-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2${
+              loading ? " loading" : ""
+            }${successState ? " success" : ""}`}
+            disabled={busy}
           >
-            {loading ? (
-              <>
-                <span className="btn-spinner" />
-                <span>
-                  {mode === "login"
-                    ? "Signing in…"
-                    : "Creating your account…"}
-                </span>
-              </>
-            ) : successState ? (
+            {successState ? (
               <>
                 <span className="auth-check-icon">✓</span>
-                <span>
-                  {mode === "login" ? "Welcome back!" : "Account created!"}
-                </span>
+                <span>{isRegister ? "Account created!" : "Welcome back!"}</span>
               </>
-            ) : mode === "login" ? (
-              "Sign In"
-            ) : (
+            ) : loading ? (
+              <>
+                <span className="btn-spinner" />
+                <span>{isRegister ? "Creating your account…" : "Signing in…"}</span>
+              </>
+            ) : isRegister ? (
               "Create Account"
+            ) : (
+              "Sign In"
             )}
           </button>
         </form>
 
         {/* Bottom Subtext Navigation */}
         <p className="auth-footer-text text-slate-600 text-xs text-center mt-6 block">
-          {mode === "login" ? (
-            <>
-              New to Bishal-Mart?{" "}
-              <button
-                type="button"
-                className="auth-link-btn text-indigo-600 hover:text-indigo-700 font-bold ml-1 cursor-pointer underline-offset-4 hover:underline bg-transparent border-none p-0 inline"
-                onClick={() => switchMode("register")}
-              >
-                Create one now
-              </button>
-            </>
-          ) : (
-            <>
-              Already have an account?{" "}
-              <button
-                type="button"
-                className="auth-link-btn text-indigo-600 hover:text-indigo-700 font-bold ml-1 cursor-pointer underline-offset-4 hover:underline bg-transparent border-none p-0 inline"
-                onClick={() => switchMode("login")}
-              >
-                Sign in
-              </button>
-            </>
-          )}
+          {isRegister ? "Already have an account? " : "New to Bishal-Mart? "}
+          <button
+            type="button"
+            className="auth-link-btn text-indigo-600 hover:text-indigo-700 font-bold ml-1 cursor-pointer underline-offset-4 hover:underline bg-transparent border-none p-0 inline"
+            onClick={() => switchMode(isRegister ? "login" : "register")}
+          >
+            {isRegister ? "Sign in" : "Create one now"}
+          </button>
         </p>
       </div>
     </div>

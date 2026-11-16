@@ -1,29 +1,25 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const PLACEHOLDER_URL = "https://placehold.co/150x150?text=No+Image";
 
 export function getProductImageUrl(imagePath) {
-  if (!imagePath) {
-    return "https://placehold.co/150x150?text=No+Image";
+  if (!imagePath || typeof imagePath !== "string") {
+    return PLACEHOLDER_URL;
   }
 
-  // If it's already an absolute URL (e.g. https://...), return as-is
-  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+  // Already absolute or self-contained: http(s), protocol-relative (//cdn...), data:, blob:
+  if (/^(https?:)?\/\//i.test(imagePath) || /^(data|blob):/i.test(imagePath)) {
     return imagePath;
   }
 
-  // Strip duplicate leading slash if needed
+  // Ensure exactly one leading slash
   const cleanPath = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
 
-  // If it's an uploaded asset from the backend (/uploads/...), prepend backend host
-  if (cleanPath.startsWith("/uploads")) {
-    return `${API_BASE_URL}${cleanPath}`;
-  }
-
-  // If it's a frontend static asset (starts with /images), serve from client host
+  // Frontend static assets are served from the client host
   if (cleanPath.startsWith("/images")) {
     return cleanPath;
   }
 
-  // Default: prepend backend host
+  // Uploaded assets and everything else come from the backend host
   return `${API_BASE_URL}${cleanPath}`;
 }
 

@@ -38,7 +38,7 @@ dependencies {
     implementation("com.razorpay:razorpay-java:1.4.8")
 
     // Database Driver & DevTools
-    runtimeOnly("com.mysql:mysql-connector-j")
+    runtimeOnly("org.postgresql:postgresql")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
 
     // Lombok (1.18.40+ is required for JDK 25)

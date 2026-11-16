@@ -4,12 +4,25 @@ import { Header } from "../../Components/Header";
 import { ProductModal } from "../../Components/ProductModal";
 import { productsApi, cartApi, extractErrorMessage, clientCache } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
-import { formatMoney } from "../../util/money";
-import { getProductImageUrl } from "../../util/imageUrl";
+import { formatMoney, USD_TO_INR_RATE } from "../../util/money";
 import { toast } from "../../util/toast";
 import { OptimizedImage } from "../../Components/OptimizedImage";
 import { SlidersHorizontal, X, Sparkles, ShieldCheck, Truck, Zap } from "lucide-react";
 import "./CatalogPage.css";
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+const MAX_PRICE_CENTS = 12000;
+const MAX_QTY_PER_ORDER = 10;
+const DEBOUNCE_MS = 400;
+
+const toNumber = (v, fallback = 0) => {
+  if (typeof v === "number") return Number.isNaN(v) ? fallback : v;
+  if (typeof v === "string") {
+    const n = parseFloat(v);
+    return Number.isNaN(n) ? fallback : n;
+  }
+  return fallback;
+};
 
 // ── Skeleton Card ─────────────────────────────────────────────────────────────
 function SkeletonCard() {
@@ -29,34 +42,25 @@ function SkeletonCard() {
 }
 
 // ── Star Rating ───────────────────────────────────────────────────────────────
+// Single place that normalizes every API rating shape. Callers can pass either
+// explicit `rating`/`count`, a legacy `value`, or the whole `product`.
 export function StarRating({ rating, count, value, product }) {
-  // Extract rating value safely across all API formats (nested object, direct property, string, etc.)
   const rawRating =
     rating ??
-    (product ? (product.rating?.stars ?? product.stars ?? product.ratingStars ?? product.rating) : undefined) ??
-    (typeof value === "object" && value !== null ? (value.stars ?? value.rating) : value) ??
+    (product
+      ? product.rating?.stars ?? product.stars ?? product.ratingStars ?? product.rating
+      : undefined) ??
+    (typeof value === "object" && value !== null ? value.stars ?? value.rating : value) ??
     0;
 
-  const numericRating =
-    typeof rawRating === "number" && !isNaN(rawRating)
-      ? rawRating
-      : typeof rawRating === "string" && !isNaN(parseFloat(rawRating))
-      ? parseFloat(rawRating)
-      : 0;
-
-  // Extract review count safely across all API formats
   const rawCount =
     count ??
-    (product ? (product.rating?.count ?? product.count ?? product.ratingCount) : undefined) ??
+    (product ? product.rating?.count ?? product.count ?? product.ratingCount : undefined) ??
     (typeof value === "object" && value !== null ? value.count : undefined) ??
     0;
 
-  const reviewCount =
-    typeof rawCount === "number" && !isNaN(rawCount)
-      ? rawCount
-      : typeof rawCount === "string" && !isNaN(parseInt(rawCount, 10))
-      ? parseInt(rawCount, 10)
-      : 0;
+  const numericRating = toNumber(rawRating);
+  const reviewCount = Math.trunc(toNumber(rawCount));
 
   // Round rating to nearest half star
   const roundedStars = Math.round(numericRating * 2) / 2;
@@ -88,32 +92,45 @@ export function StarRating({ rating, count, value, product }) {
 
 // ── Product Card ──────────────────────────────────────────────────────────────
 export function ProductCard({ product, onAddToCart, onOpenModal, priority = false }) {
-  const { user, token } = useAuth();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [qty, setQty] = useState(1);
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
+  const addedTimerRef = useRef(null);
+
+  // Clear the "✓ Added" timer on unmount to avoid setState on an unmounted component
+  useEffect(() => {
+    return () => clearTimeout(addedTimerRef.current);
+  }, []);
+
+  const stock = product.stockQuantity ?? 1;
+  const inStock = stock > 0;
+  const maxQty = Math.max(1, Math.min(MAX_QTY_PER_ORDER, stock));
 
   const handleAddToCart = async () => {
-    const isAuthenticated = Boolean(user || token || sessionStorage.getItem('token') || localStorage.getItem('token'));
-
     if (!isAuthenticated) {
       toast.info("Please sign in to add items to your cart");
       navigate("/login", { state: { from: location.pathname } });
-      return; // Stop execution immediately
+      return;
     }
 
     setAdding(true);
-    const success = await onAddToCart(product.id, qty);
-    setAdding(false);
-    if (success) {
-      setAdded(true);
-      setTimeout(() => setAdded(false), 2500);
+    try {
+      const success = await onAddToCart(product.id, qty);
+      if (success) {
+        setAdded(true);
+        clearTimeout(addedTimerRef.current);
+        addedTimerRef.current = setTimeout(() => setAdded(false), 2500);
+      }
+    } catch (err) {
+      // Graceful recovery: prevents the button from being stuck in the spinner state
+      console.error("Failed to add item to cart:", err);
+    } finally {
+      setAdding(false);
     }
   };
-
-  const inStock = (product.stockQuantity ?? 1) > 0;
 
   return (
     <div className={`product-card${!inStock ? " out-of-stock" : ""}`}>
@@ -136,9 +153,7 @@ export function ProductCard({ product, onAddToCart, onOpenModal, priority = fals
       </div>
 
       <div className="product-meta">
-        {product.category && (
-          <span className="product-category">{product.category.name}</span>
-        )}
+        {product.category && <span className="product-category">{product.category.name}</span>}
         {product.brand && <span className="product-brand">{product.brand}</span>}
       </div>
 
@@ -153,11 +168,8 @@ export function ProductCard({ product, onAddToCart, onOpenModal, priority = fals
         {product.name}
       </div>
 
-      {/* Product Rating & Review Count */}
-      <StarRating
-        rating={product.rating?.stars ?? product.stars ?? product.ratingStars ?? product.rating}
-        count={product.rating?.count ?? product.count ?? product.ratingCount ?? 0}
-      />
+      {/* Product Rating & Review Count (normalization lives inside StarRating) */}
+      <StarRating product={product} />
 
       <div className="product-price">{formatMoney(product.priceCents || 0)}</div>
 
@@ -165,11 +177,14 @@ export function ProductCard({ product, onAddToCart, onOpenModal, priority = fals
         <input
           type="number"
           min="1"
-          max={Math.max(1, Math.min(10, product.stockQuantity || 1))}
+          max={maxQty}
           className="qty-input"
           value={qty}
           aria-label="Quantity"
-          onChange={(e) => setQty(Math.max(1, parseInt(e.target.value) || 1))}
+          onChange={(e) => {
+            const parsed = parseInt(e.target.value, 10) || 1;
+            setQty(Math.min(maxQty, Math.max(1, parsed)));
+          }}
           disabled={!inStock}
         />
         <button
@@ -178,13 +193,7 @@ export function ProductCard({ product, onAddToCart, onOpenModal, priority = fals
           disabled={adding || !inStock}
           aria-label={`Add ${product.name} to cart`}
         >
-          {adding ? (
-            <span className="btn-spinner-sm" />
-          ) : added ? (
-            "✓ Added"
-          ) : (
-            "Add to Cart"
-          )}
+          {adding ? <span className="btn-spinner-sm" /> : added ? "✓ Added" : "Add to Cart"}
         </button>
       </div>
     </div>
@@ -192,11 +201,9 @@ export function ProductCard({ product, onAddToCart, onOpenModal, priority = fals
 }
 
 // ── Price Helpers ────────────────────────────────────────────────────────────
-const MAX_PRICE_CENTS = 12000;
-
 function formatPriceBadge(cents) {
   if (cents <= 0) return "₹0";
-  const rupees = Math.round((Number(cents || 0) / 100) * 52);
+  const rupees = Math.round((Number(cents || 0) / 100) * USD_TO_INR_RATE);
   return `₹${rupees.toLocaleString("en-IN")}`;
 }
 
@@ -327,7 +334,7 @@ export function CatalogPage({ cart, loadCart }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, token, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   // Derived filter state from URL
   const currentPage = parseInt(searchParams.get("page") || "0", 10);
@@ -370,9 +377,16 @@ export function CatalogPage({ cart, loadCart }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isFilterOpen]);
 
-  // Debounced search
-  const searchRef = useRef(searchQuery);
-  const debounceTimer = useRef(null);
+  // Separate debounce timers so typing in one field never cancels the other
+  const searchDebounceRef = useRef(null);
+  const brandDebounceRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      clearTimeout(searchDebounceRef.current);
+      clearTimeout(brandDebounceRef.current);
+    };
+  }, []);
 
   const updateParam = (key, value) => {
     setSearchParams((prev) => {
@@ -396,15 +410,21 @@ export function CatalogPage({ cart, loadCart }) {
 
   const handleSearchChange = (e) => {
     const val = e.target.value;
-    searchRef.current = val;
-    clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => {
-      updateParam("search", val);
-    }, 400);
+    clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => updateParam("search", val), DEBOUNCE_MS);
+  };
+
+  const handleBrandChange = (e) => {
+    const val = e.target.value;
+    clearTimeout(brandDebounceRef.current);
+    brandDebounceRef.current = setTimeout(() => updateParam("brand", val), DEBOUNCE_MS);
   };
 
   const handleResetFilters = () => {
-    searchRef.current = "";
+    // Cancel any pending debounced updates so they can't re-apply old filters
+    clearTimeout(searchDebounceRef.current);
+    clearTimeout(brandDebounceRef.current);
+
     const searchInput = document.getElementById("catalog-search");
     if (searchInput) searchInput.value = "";
     const brandInput = document.getElementById("brand-input");
@@ -438,12 +458,8 @@ export function CatalogPage({ cart, loadCart }) {
     if (minPrice > 0) params.minPriceCents = minPrice;
     if (maxPriceParam && maxPrice < MAX_PRICE_CENTS) params.maxPriceCents = maxPrice;
 
-    // Synchronous Cache Check: If data exists in memory cache, display it instantly (zero layout shift/flicker)
-    const cacheKey = clientCache.createKey("/products", params);
-    const cached = clientCache.get(cacheKey, 3 * 60 * 1000);
-
-    if (cached && cached.data) {
-      const data = cached.data;
+    const applyData = (data) => {
+      // Handle both paginated and array responses
       if (Array.isArray(data)) {
         setProducts(data);
         setTotalPages(1);
@@ -453,7 +469,15 @@ export function CatalogPage({ cart, loadCart }) {
         setTotalPages(data.totalPages || 1);
         setTotalElements(data.totalElements || 0);
       }
-      setLoading(false); // Do not flash skeleton if we already have valid cache
+    };
+
+    // Synchronous cache check: show cached data instantly (no skeleton flash)
+    const cacheKey = clientCache.createKey("/products", params);
+    const cached = clientCache.get(cacheKey, 3 * 60 * 1000);
+
+    if (cached && cached.data) {
+      applyData(cached.data);
+      setLoading(false);
     } else {
       setLoading(true);
     }
@@ -462,26 +486,18 @@ export function CatalogPage({ cart, loadCart }) {
       .list(params)
       .then((res) => {
         if (cancelled) return;
-        const data = res.data;
-        // Handle both paginated and array responses
-        if (Array.isArray(data)) {
-          setProducts(data);
-          setTotalPages(1);
-          setTotalElements(data.length);
-        } else {
-          setProducts(data.content || []);
-          setTotalPages(data.totalPages || 1);
-          setTotalElements(data.totalElements || 0);
-        }
+        applyData(res.data);
       })
       .catch((err) => {
-        if (!cancelled) {
-          console.error("Failed to load products:", err);
-          if (!cached) {
-            setProducts([]);
-            setTotalPages(0);
-            setTotalElements(0);
-          }
+        if (cancelled) return;
+        console.error("Failed to load products:", err);
+        if (cached) {
+          // Stale data stays on screen, but tell the user it may be out of date
+          toast.error("Couldn't refresh products. Showing saved results.");
+        } else {
+          setProducts([]);
+          setTotalPages(0);
+          setTotalElements(0);
         }
       })
       .finally(() => {
@@ -495,7 +511,6 @@ export function CatalogPage({ cart, loadCart }) {
 
   const handleAddToCart = useCallback(
     async (productId, quantity = 1) => {
-      const isAuthenticated = Boolean(user || token || sessionStorage.getItem('token') || localStorage.getItem('token'));
       if (!isAuthenticated) {
         toast.info("Please sign in to add items to your cart");
         navigate("/login", { state: { from: location.pathname } });
@@ -507,21 +522,17 @@ export function CatalogPage({ cart, loadCart }) {
         toast.success("Added to cart!");
         return true;
       } catch (err) {
-        const errorMsg =
-          extractErrorMessage(err) || "Failed to add item. Please try again.";
+        const errorMsg = extractErrorMessage(err) || "Failed to add item. Please try again.";
         toast.error(errorMsg);
         return false;
       }
     },
-    [user, token, loadCart, navigate, location]
+    [isAuthenticated, loadCart, navigate, location]
   );
 
   const handleBuyNow = useCallback(
     async (product, quantity = 1) => {
-      const isAuthed = Boolean(
-        user || token || sessionStorage.getItem("token") || localStorage.getItem("token")
-      );
-      if (!isAuthed) {
+      if (!isAuthenticated) {
         toast.info("Please sign in to complete your purchase");
         setSelectedProduct(null);
         navigate("/login", { state: { from: "/checkout" } });
@@ -533,12 +544,11 @@ export function CatalogPage({ cart, loadCart }) {
         setSelectedProduct(null);
         navigate("/checkout");
       } catch (err) {
-        const errorMsg =
-          extractErrorMessage(err) || "Failed to initiate checkout.";
+        const errorMsg = extractErrorMessage(err) || "Failed to initiate checkout.";
         toast.error(errorMsg);
       }
     },
-    [user, token, loadCart, navigate]
+    [isAuthenticated, loadCart, navigate]
   );
 
   return (
@@ -703,13 +713,7 @@ export function CatalogPage({ cart, loadCart }) {
                 className="filter-input"
                 placeholder="e.g. Apple, Nike"
                 defaultValue={brand}
-                onChange={(e) => {
-                  clearTimeout(debounceTimer.current);
-                  debounceTimer.current = setTimeout(
-                    () => updateParam("brand", e.target.value),
-                    400
-                  );
-                }}
+                onChange={handleBrandChange}
               />
             </div>
 
@@ -771,11 +775,7 @@ export function CatalogPage({ cart, loadCart }) {
               </select>
             </div>
 
-            <button
-              type="button"
-              className="clear-filters-btn"
-              onClick={handleResetFilters}
-            >
+            <button type="button" className="clear-filters-btn" onClick={handleResetFilters}>
               ✕ Clear All Filters
             </button>
           </div>
@@ -783,7 +783,6 @@ export function CatalogPage({ cart, loadCart }) {
 
         {/* ── Product Grid ── */}
         <main className="catalog-main">
-
           <div className="products-grid">
             {loading
               ? Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)
@@ -799,10 +798,7 @@ export function CatalogPage({ cart, loadCart }) {
             {!loading && products.length === 0 && (
               <div className="no-results">
                 <p>No products match your filters.</p>
-                <button
-                  className="button-primary"
-                  onClick={handleResetFilters}
-                >
+                <button className="button-primary" onClick={handleResetFilters}>
                   Reset Filters
                 </button>
               </div>
